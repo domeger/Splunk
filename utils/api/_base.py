@@ -55,6 +55,55 @@ class C42Script(object):
 		parser.add_argument('-port', dest='port', default='4285', help='Code42 Console Port')
 		parser.add_argument('-p', dest='password', default='', help='Code42 Console password (replaces prompt)')
 
+	# Convenience methods
+	def search_devices(self, queries, type='CrashPlan'):
+		computers = []
+		for query in queries:
+
+			params = {}
+			params['active'] = 'true'
+
+			if query.startswith('org:'):
+				orgQuery = query[4:]
+				self.log(">> Querying organization information.")
+				# Querying organization information.
+				orgParams = {}
+				orgParams['q'] = orgQuery
+				orgPayload = {}
+				r = self.console.executeRequest("get", self.console.cp_api_org, orgParams, orgPayload)
+				content = r.content.decode('UTF-8')
+				binary = json.loads(content)
+				orgUid = binary['data']['orgs'][0]['orgUid']
+
+				self.log(">> Querying all computers inside organization " + orgUid + ".")
+				# Querying all computers inside organization.
+				params['orgUid'] = orgUid
+			else:
+				self.log(">> Querying computers with name " + query + ".")
+				# Querying all computers inside organization.
+				params['q'] = query
+
+			payload = {}
+			r = self.console.executeRequest("get", self.console.cp_api_computer, params, payload)
+			content = r.content.decode('UTF-8')
+			binary = json.loads(content)
+
+			if isinstance(binary, list):
+				sys.stderr.write("ERROR: " + binary[0]['name'] + ": " + binary[0]['description'] + "\n")
+			else:
+				queryComputers = binary['data']['computers']
+				if len(queryComputers) == 0:
+					sys.stderr.write("ERROR: Computer " + query + " could not be found, or is not active.\n")
+
+				for computer in queryComputers:
+					if computer['service'] == type:
+						srcGUID = computer['guid']
+						if not srcGUID in computers:
+							computers.append(srcGUID)
+
+		self.log('>> Found ' + str(len(computers)) + ' devices matching queries.')
+		return computers
+
 	# Lifecycle
 	def start(self):
 		if not self.args:
@@ -89,7 +138,7 @@ class C42Script(object):
 		self.log('')
 		self.outline()
 		self.log('')
-		
+
 		self.prepare()
 
 		self.main()
