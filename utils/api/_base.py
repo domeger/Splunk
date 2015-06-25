@@ -15,6 +15,7 @@ import json
 
 from c42SharedLibrary import c42Lib
 
+# http://stackoverflow.com/a/17603000/296794
 @contextlib.contextmanager
 def smart_open(filename=None):
 	if filename and filename != '-':
