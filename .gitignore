@@ -1,0 +1,19 @@
+# Code42 Splunk App
+events
+
+# OSX noise
+.DS_Store
+
+# Compiled python files
+*.pyc
+
+# Eclipse project files
+.project
+.pydevproject
+
+# Local stuff
+local/
+local.meta
+
+# Git repositories folder
+git-repositories/

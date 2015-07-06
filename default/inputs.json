@@ -1,0 +1,13 @@
+[
+  {
+    "protocol": "script",
+    "path": [ ".", "bin", "splunk-userWrapper.py" ],
+    "settings": {
+      "interval": "0 1 * * *",
+      "index": "code42",
+      "sourcetype": "c42userevent",
+      "passAuth": "splunk-system-user",
+      "disabled": "0"
+    }
+  }
+]

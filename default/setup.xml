@@ -1,0 +1,27 @@
+<setup>
+	<block title="Configure Code42">
+		<text>You need to set up a Splunk user account with your Code42 Server.</text>
+	</block>
+	<block title="Code42 Console Server" endpoint="code42/config" entity="console">
+		<input field="hostname">
+			<label>Console Hostname</label>
+			<type>text</type>
+		</input>
+
+		<input field="port">
+			<label>Console Port</label>
+			<type>text</type>
+		</input>
+	</block>
+	<block title="Code42 Console User" endpoint="storage/passwords" entity="_new">
+		<input field="name">
+			<label>Console Username</label>
+			<type>text</type>
+		</input>
+
+		<input field="password">
+			<label>Console Password</label>
+			<type>password</type>
+		</input>
+	</block>
+</setup>
