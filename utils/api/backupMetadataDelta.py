@@ -110,10 +110,7 @@ class BackupMetadataDelta(C42Script):
             END = '\033[0m'
 
             shape = '?'
-            if event['eventType'] == 'BACKUP_FILE_CREATE':
-                shape = '+'
-                COLOR = '\033[92m'
-            elif event['eventType'] == 'BACKUP_FILE_MODIFY':
+            if event['eventType'] == 'BACKUP_FILE_ACTIVITY':
                 shape = '*'
                 COLOR = '\033[94m'
             elif event['eventType'] == 'BACKUP_FILE_DELETE':
@@ -207,14 +204,9 @@ class BackupMetadataDelta(C42Script):
                     file['fileEventType'] = 'delete'
                     file['MD5Hash'] = ''
                     file['length'] = 0
-                elif lastFileVersion and lastFileVersion['path'] == version['path']:
-                    # Previous file version exists, file has been modified.
-                    event['eventType'] = 'BACKUP_FILE_MODIFY'
-                    file['fileEventType'] = 'modify'
                 else:
-                    # No previous file version, file has been added.
-                    event['eventType'] = 'BACKUP_FILE_CREATE'
-                    file['fileEventType'] = 'create'
+                    event['eventType'] = 'BACKUP_FILE_ACTIVITY'
+                    file['fileEventType'] = 'activity'
 
                 if version['fileType'] == 1:
                     # CrashPlan keeps some inacurate data about folders we want to remove.
