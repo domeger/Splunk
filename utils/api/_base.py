@@ -17,9 +17,14 @@ from c42SharedLibrary import c42Lib
 
 # http://stackoverflow.com/a/17603000/296794
 @contextlib.contextmanager
-def smart_open(filename=None):
+def smart_open(filename=None, **kwargs):
+	overwrite_file = kwargs.get('overwrite_file', False)
+
 	if filename and filename != '-':
-		fh = open(filename, 'w')
+		style = 'a'
+		if overwrite_file:
+			style = 'w'
+		fh = open(filename, style)
 	else:
 		fh = sys.stdout
 
