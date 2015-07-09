@@ -101,11 +101,7 @@ class BackupMetadataDelta(C42Script):
 
     def __str(self, obj):
         # http://code.activestate.com/recipes/466341-guaranteed-conversion-to-unicode-or-byte-string/
-        try:
-            return str(obj)
-        except UnicodeEncodeError:
-            # obj is unicode
-            return unicode(obj).encode('unicode_escape')
+        return str(obj).encode('ascii', 'ignore').decode('unicode_escape')
 
     def __output(self, out, event):
         if self.args.format == 'csv':
