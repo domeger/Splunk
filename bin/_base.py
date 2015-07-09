@@ -55,7 +55,8 @@ class SplunkScript(object):
 			try:
 				# list all credentials
 				passwordEntities = entity.getEntities(['admin', 'passwords'], namespace='code42', owner='nobody', sessionKey=sessionKey)
-				configConsoleEntities = entity.getEntities(['code42', 'config', 'console'], namespace='code42', owner='nobody', sessionKey=sessionKey)  
+				configConsoleEntities = entity.getEntities(['code42', 'config', 'console'], namespace='code42', owner='nobody', sessionKey=sessionKey)
+				configScriptEntities = entity.getEntities(['code42', 'config', 'script'], namespace='code42', owner='nobody', sessionKey=sessionKey)
 			except Exception as e:
 				raise Exception("Could not get code42 credentials from splunk. Error: %s" % (str(e)))
 
@@ -68,13 +69,19 @@ class SplunkScript(object):
 			for i, c in configConsoleEntities.items():
 				config['hostname'] = c['hostname']
 				config['port'] = c['port']
-			
+
+			for i, c in configScriptEntities.items():
+				config['device'] = c['device']
+
 			self.config = config
 
 		return self.config
 
 	def python(self, arguments, **kwargs):
 		include_console = kwargs.get('include_console', True)
+		write_stdout = kwargs.get('write_stdout', False)
+
+		write_stdout = write_stdout or (not 'STDOUT' in os.environ or os.environ['STDOUT'] != 'true')
 
 		arguments.insert(0, self.PYTHONPATH)
 
@@ -94,7 +101,7 @@ class SplunkScript(object):
 			# Unix (non-Linux) Library Path
 			del os.environ['DYLD_LIBRARY_PATH']
 
-		if not 'STDOUT' in os.environ or os.environ['STDOUT'] != 'true':
+		if not write_stdout:
 			FNULL = open(os.devnull, 'w')
 			return subprocess.call(arguments, stdout=FNULL, stderr=sys.stderr)
 		else:

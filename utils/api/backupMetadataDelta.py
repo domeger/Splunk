@@ -11,6 +11,7 @@
 #
 
 import os
+import sys
 import json
 import datetime
 
@@ -22,11 +23,15 @@ class BackupMetadataDelta(C42Script):
         return 'Calculate a backup selection metadata delta between two dates for a list of computers.'
 
     def setup_parser(self, parser):
-        parser.add_argument('devices', help='Comma separated list of computer name or GUID, and/or organization name (prefixed with "org:")')
         parser.add_argument('date1', help='Date for the base during delta calculation (2015-06-24)')
         parser.add_argument('date2', help='Date for the opposing delta calculation (2015-06-24)')
+        parser.add_argument('-d', '--devices', dest='devices', help='Comma separated list of computer name or GUID, and/or organization name (prefixed with "org:")')
         parser.add_argument('-o', '--output', dest='output', help='An optional output file as a CSV document, "csv" or "json" for STDOUT formatting.')
-        parser.add_argument('--no-color', default=True, dest='color', action='store_false', help='Disables colored output for delta (only applies when no output file specified)')
+
+        if os.name != 'nt':
+            # Windows cannot print in color, so we hide the functionality.
+            parser.add_argument('--no-color', default=True, dest='color', action='store_false', help='Disables colored output for delta (only applies when no output file specified)')
+
         parser.add_argument('-H', '--header', default=False, dest='header', action='store_true', help='Include header when outputting to a CSV document')
         parser.add_argument('--no-folders', default=True, dest='folders', action='store_false', help='Removes add/delete folder events from output results')
 
@@ -35,9 +40,15 @@ class BackupMetadataDelta(C42Script):
     def start(self):
         super(BackupMetadataDelta, self).start()
 
-        self.args.devices = self.args.devices.split(',')
+        if self.args.devices:
+            self.args.devices = self.args.devices.split(',')
+
         self.args.date1 = parse(self.args.date1)
         self.args.date2 = parse(self.args.date2)
+
+        if os.name == 'nt':
+            # Windows cannot print in color, so we hide the functionality.
+            self.args.color = False
 
         self.args.format = 'custom'
         if self.args.output:
@@ -66,7 +77,8 @@ class BackupMetadataDelta(C42Script):
             self.log("Resolving Backup Selection Delta to " + self.args.output)
         else:
             self.log("Resolving Backup Selection Delta")
-        self.log("> Devices:\t" + json.dumps(self.args.devices))
+        if self.args.devices:
+            self.log("> Devices:\t" + json.dumps(self.args.devices))
         self.log("> Base date:\t" + self.args.date1.isoformat())
         self.log("> Second date:\t" + self.args.date2.isoformat())
 
@@ -86,6 +98,14 @@ class BackupMetadataDelta(C42Script):
                 return "%d %s" % (num, unit)
             num /= 1024.0
         return "%.1f %s" % (num, 'YB')
+
+    def __str(self, obj):
+        # http://code.activestate.com/recipes/466341-guaranteed-conversion-to-unicode-or-byte-string/
+        try:
+            return str(obj)
+        except UnicodeEncodeError:
+            # obj is unicode
+            return unicode(obj).encode('unicode_escape')
 
     def __output(self, out, event):
         if self.args.format == 'csv':
@@ -189,14 +209,14 @@ class BackupMetadataDelta(C42Script):
             if self.__filterFileVersion(version):
                 event = {}
                 event['deviceGuid'] = int(deviceGUID)
-                event['timestamp'] = version['timestamp']
+                event['timestamp'] = int(version['timestamp'])
                 event['version'] = 1
-                file = { 'fullPath': version['path'],
-                                    'fileName': version['path'].split('/')[-1],
-                                    'length': version['sourceLength'],
-                                    'MD5Hash': version['sourceChecksum'],
-                                    'lastModified': version['timestamp'],
-                                    'fileType': version['fileType'] }
+                file = { 'fullPath': self.__str(version['path']),
+                                    'fileName': self.__str(version['path'].split('/')[-1]),
+                                    'length': int(version['sourceLength']),
+                                    'MD5Hash': self.__str(version['sourceChecksum']),
+                                    'lastModified': int(version['timestamp']),
+                                    'fileType': int(version['fileType']) }
 
                 if version['sourceChecksum'] == 'ffffffffffffffffffffffffffffffff':
                     # Checksum is none, file has been deleted.
@@ -217,7 +237,7 @@ class BackupMetadataDelta(C42Script):
 
                 delta.append(event)
             lastFileVersion = version
-        
+
         if len(delta) > 0:
             with smart_open(self.args.output) as out:
                 for version in delta:
@@ -230,12 +250,15 @@ class BackupMetadataDelta(C42Script):
 
         # Open the file & overwrite any previous content with empty (clean output).
         with smart_open(self.args.output, overwrite_file=True) as out:
-            if self.args.header:
-                out.write("deviceGuid,eventType,files_MD5Hash,files_fileEventType,files_fileName,files_fileType,files_fullPath,files_lastModified,files_length,timestamp\n")           
+            if self.args.format == 'csv' and self.args.header:
+                out.write("deviceGuid,eventType,files_MD5Hash,files_fileEventType,files_fileName,files_fileType,files_fullPath,files_lastModified,files_length,timestamp\n")
 
         for deviceGUID in deviceGUIDs:
             self.log('')
-            self.calculateDelta(deviceGUID)
+            try:
+                self.calculateDelta(deviceGUID)
+            except Exception as e:
+                sys.stderr.write("ERROR: %s\n" % str(e))
 
         self.log('')
         self.log('Finished calculating backup metadata delta.')

@@ -64,6 +64,28 @@ class C42Script(object):
 	# Convenience methods
 	def search_devices(self, queries, type='CrashPlan'):
 		computers = []
+		if not queries:
+			# All devices (null queries)
+			payload = {}
+			params = {}
+			r = self.console.executeRequest("get", self.console.cp_api_computer, params, payload)
+			content = r.content.decode('UTF-8')
+			binary = json.loads(content)
+
+			if isinstance(binary, list):
+				sys.stderr.write("ERROR: " + binary[0]['name'] + ": " + binary[0]['description'] + "\n")
+			else:
+				queryComputers = binary['data']['computers']
+				if len(queryComputers) == 0:
+					sys.stderr.write("ERROR: Computer " + query + " could not be found, or is not active.\n")
+
+				for computer in queryComputers:
+					if computer['service'] == type:
+						srcGUID = computer['guid']
+						if not srcGUID in computers:
+							computers.append(srcGUID)
+			return computers
+
 		for query in queries:
 
 			params = {}
