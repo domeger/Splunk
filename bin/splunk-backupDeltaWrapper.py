@@ -17,7 +17,12 @@ class BackupDeltaWrapper(SplunkScript):
 
         # Set up variables
         pyScript = os.path.join(self.appHome, 'utils', 'api', 'backupMetadataDelta.py')
-        cursor = os.path.join(self.appHome, 'events', 'backupMetadataDelta-lastRun')
+        eventsOutput = os.path.join(self.appHome, 'events')
+        cursor = os.path.join(eventsOutput, 'backupMetadataDelta-lastRun')
+
+        # Ensure the events directory exists
+        if not os.path.exists(eventsOutput):
+            os.makedirs(eventsOutput)
 
         if os.path.exists(cursor):
             # Read the ISO cursor of the lower range (upper range from last run).
