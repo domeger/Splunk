@@ -71,7 +71,7 @@ class SplunkScript(object):
 				config['port'] = c['port']
 
 			for i, c in configScriptEntities.items():
-				config['device'] = c['device']
+				config['devices'] = c['devices']
 
 			self.config = config
 
