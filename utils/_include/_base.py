@@ -14,6 +14,7 @@ import getpass
 import json
 
 from c42SharedLibrary import c42Lib
+import _c42_csv as csv
 
 # http://stackoverflow.com/a/17603000/296794
 @contextlib.contextmanager
@@ -39,10 +40,12 @@ class C42Script(object):
 	arg_parser = None
 	args = {}
 	console = None
+	csv = None
 	def __init__(self):
 		description = self.description()
 		self.arg_parser = argparse.ArgumentParser(description=description)
 		self.console = c42Lib
+		self.csv = csv
 
 		self.setup_parser(self.arg_parser)
 

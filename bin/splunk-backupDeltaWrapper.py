@@ -16,7 +16,7 @@ class BackupDeltaWrapper(SplunkScript):
         lastRun = datetime.datetime.fromtimestamp(0)
 
         # Set up variables
-        pyScript = os.path.join(self.appHome, 'utils', 'api', 'backupMetadataDelta.py')
+        pyScript = os.path.join(self.appHome, 'utils', 'backupMetadataDelta.py')
         eventsOutput = os.path.join(self.appHome, 'events')
         cursor = os.path.join(eventsOutput, 'backupMetadataDelta-lastRun')
 

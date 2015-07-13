@@ -15,6 +15,8 @@ import sys
 import json
 import datetime
 
+sys.path.append(os.path.join(os.path.dirname(__file__), '_include'))
+
 from dateutil.parser import parse
 from _base import C42Script, smart_open
 
@@ -65,6 +67,8 @@ class BackupMetadataDelta(C42Script):
                 self.args.format = 'json'
                 self.args.output = None
                 self.logfile = os.devnull
+            elif self.args.output.endswith('json'):
+                self.args.format = 'json'
             else:
                 self.args.color = False
 
@@ -104,22 +108,7 @@ class BackupMetadataDelta(C42Script):
         return str(obj).encode('ascii', 'ignore').decode('unicode_escape')
 
     def __output(self, out, event):
-        if self.args.format == 'csv':
-            out.write("%s," % event['deviceGuid'])
-            out.write("%s," % event['eventType'])
-
-            out.write("%s," % event['files'][0]['MD5Hash'])
-            out.write("%s," % event['files'][0]['fileEventType'])
-            out.write("%s," % event['files'][0]['fileName'])
-            out.write("%s," % event['files'][0]['fileType'])
-            out.write("%s," % event['files'][0]['fullPath'])
-            out.write("%s," % event['files'][0]['lastModified'])
-            out.write("%s," % event['files'][0]['length'])
-
-            out.write("%s" % event['timestamp'])
-
-            out.write("\n")
-        elif self.args.format == 'json':
+        if self.args.format == 'json':
             out.write("%s\n" % json.dumps(event))
         elif self.args.format == 'custom':
             COLOR = '\033[1m'
@@ -153,6 +142,8 @@ class BackupMetadataDelta(C42Script):
             if self.args.color:
                 out.write(END)
             out.write("\n")
+        else:
+            raise Exception("Unexpected output format '%s'" % self.args.format)
 
     def calculateDelta(self, deviceGUID):
         self.log('> Getting delta for device %s.' % deviceGUID)
@@ -235,24 +226,58 @@ class BackupMetadataDelta(C42Script):
             lastFileVersion = version
 
         if len(delta) > 0:
-            with smart_open(self.args.output) as out:
-                for version in delta:
-                    self.__output(out, version)
+            return delta
         else:
             self.log('NOTICE: Device %s does not have any backup activity between dates.' % deviceGUID)
+            return []
 
     def main(self):
         deviceGUIDs = self.search_devices(self.args.devices)
 
         # Open the file & overwrite any previous content with empty (clean output).
-        with smart_open(self.args.output, overwrite_file=True) as out:
-            if self.args.format == 'csv' and self.args.header:
-                out.write("deviceGuid,eventType,files_MD5Hash,files_fileEventType,files_fileName,files_fileType,files_fullPath,files_lastModified,files_length,timestamp\n")
+        if self.args.output and os.path.exists(self.args.output):
+            os.remove(self.args.output)
+
+        keyset = self.csv.KeySet()
 
         for deviceGUID in deviceGUIDs:
             self.log('')
             try:
-                self.calculateDelta(deviceGUID)
+                delta = self.calculateDelta(deviceGUID)
+                if len(delta) > 0:
+                    with smart_open(self.args.output) as out:
+                        if self.args.format == 'csv':
+                            if keyset.count() == 0:
+                                # Build the keyset for the first device & version, reuse it beyond that.
+                                for key, value in delta[0].items():
+                                    json_key = self.csv.create_key(key, value)
+                                    keyset.add_key(json_key)
+                                if self.args.header:
+                                    key_header = []
+                                    for top_level_key in keyset.all_keys():
+                                        key_header = self.csv.flattened_keys(top_level_key, key_header)
+                                    out.write(",".join(key_header) + "\n")
+                            for version in delta:
+                                values = []
+                                array_length = self.csv.dict_contains_array(version)
+                                if array_length > -1:
+                                    for i in range(0, array_length):
+                                        values = []
+                                        for top_level_key in keyset.all_keys():
+                                            values = values + self.csv.dict_into_values(version, top_level_key, i)
+                                        csvstring = self.csv.create_csv_string(values)
+                                        out.write(csvstring + "\n")
+
+                                else:
+                                    for top_level_key in keyset.all_keys():
+                                        values = values + self.csv.dict_into_values(version, top_level_key)
+                                    csvstring = self.csv.create_csv_string(values)
+                                    out.write(csvstring + "\n")
+                        else:
+                            for version in delta:
+                                self.__output(out, version)
+
+
             except Exception as e:
                 sys.stderr.write("ERROR: %s\n" % str(e))
 
