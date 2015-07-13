@@ -20,5 +20,16 @@
       "passAuth": "splunk-system-user",
       "disabled": "0"
     }
+  },
+  {
+    "protocol": "script",
+    "path": [ ".", "bin", "splunk-computerWrapper.py" ],
+    "settings": {
+      "interval": "5 1 * * *",
+      "index": "code42",
+      "sourcetype": "c42computerevent",
+      "passAuth": "splunk-system-user",
+      "disabled": "0"
+    }
   }
 ]
