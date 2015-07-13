@@ -7,7 +7,7 @@
 # Calculate a backup selection metadata delta between two dates
 # for a list of computers.
 #
-# Usage: backupMetadataDelta.py [deviceName/deviceGuid] [date1] [date2]
+# Usage: backupMetadataDelta.py [date1] [date2]
 #
 
 import os
@@ -86,7 +86,7 @@ class BackupMetadataDelta(C42Script):
 
     def __filterFileVersion(self, version):
         if not self.args.folders and version['fileType'] == 1:
-            # We don't care about folder creation or deletions
+            # Skip folder creation or deletions with `--no-folder` argument.
             return False
 
         versionTimestamp = parse(version['versionTimestamp']).replace(tzinfo=None)

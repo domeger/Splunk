@@ -65,7 +65,7 @@ class ConfigApp(admin.MConfigHandler):
         else:
           self.callerArgs.data['hostname'][0] = "http://%s" % hostname
     elif name == 'script':
-      # /code42/config/filter [filter stanza]
+      # /code42/config/script [script stanza]
 
       self.itemDefault('devices', '')
 
