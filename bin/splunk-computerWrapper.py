@@ -1,6 +1,5 @@
 from _base import SplunkScript
 
-import datetime
 import json
 import os
 import sys
@@ -11,18 +10,9 @@ class ComputerWrapper(SplunkScript):
         ## RUN THE COMPUTERS EXPORTER & REFORMAT EVENTS FOR SPLUNK ##
         #############################################################
 
-        # Get current date/time
-        now = datetime.datetime.now()
-        timestamp = str(now.year) + "-" + str(now.month) + "-" + str(now.day) + "-" + str(now.hour) + "-" + str(now.minute) + "-" + str(now.second)
-
         # Set up variables
         pyScript = os.path.join(self.appHome, 'utils', 'api', 'computers.py')
-        tmpEventOutput = os.path.join(self.appHome, 'events', 'computers-tmp')
-        tmpEventFile = os.path.join(tmpEventOutput, timestamp + '-computers.txt')
-
-        # Ensure the events tmp directory exists
-        if not os.path.exists(tmpEventOutput):
-            os.makedirs(tmpEventOutput)
+        tmpEventFile = os.path.join(self.appHome, 'events', 'computers.txt')
 
         args = [ pyScript,
                  tmpEventFile
@@ -33,8 +23,8 @@ class ComputerWrapper(SplunkScript):
         with open(tmpEventFile) as data_file:
             data = json.load(data_file)
 
-        for computer_dict in data:
-            sys.stdout.write(json.dumps(computer_dict) + "\n")
+            for computer_dict in data:
+                sys.stdout.write(json.dumps(computer_dict) + "\n")
 
         os.remove(tmpEventFile)
 

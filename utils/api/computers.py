@@ -1,4 +1,4 @@
-#!/usr/etc/env python3
+#!/usr/bin/env python3
 
 # File: computers.py
 # Author: Nick Wallin
