@@ -64,6 +64,9 @@ class c42Lib(object):
 	cp_api_webRestoreSearch = "/api/WebRestoreSearch"
 	cp_api_webRestoreJob = "/api/WebRestoreJob"
 	cp_api_webRestoreJobResult = "/api/WebRestoreJobResult"
+
+	cp_api_plan = "/api/Plan"
+
 	cp_logLevel = "INFO"
 	cp_logFileName = "c42SharedLibrary.log"
 	# This number is set to the maximum limit (current ver. 3.5.4) the REST API allows a resultset size to be.

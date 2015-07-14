@@ -16,7 +16,7 @@ class UserWrapper(SplunkScript):
         timestamp = str(now.year) + "-" + str(now.month) + "-" + str(now.day) + "-" + str(now.hour) + "-" + str(now.minute) + "-" + str(now.second)
 
         # Set up variables
-        pyScript = os.path.join(self.appHome, 'utils', 'api', 'userRoles.py')
+        pyScript = os.path.join(self.appHome, 'utils', 'userRoles.py')
         tmpEventOutput = os.path.join(self.appHome, 'events', 'users-tmp')
         tmpEventFile = os.path.join(tmpEventOutput, timestamp + '-userRoles.txt')
 

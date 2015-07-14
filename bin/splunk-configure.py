@@ -9,7 +9,7 @@ import splunk.entity as en
 class ConfigApp(admin.MConfigHandler):
   def setup(self):
     if self.requestedAction == admin.ACTION_EDIT:
-      args = ['hostname', 'port']
+      args = ['hostname', 'port', 'devices']
       for arg in args:
         self.supportedArgs.addOptArg(arg)
 
@@ -26,7 +26,7 @@ class ConfigApp(admin.MConfigHandler):
 
         if not protocol in entities:
           entities.append(protocol)
-    
+
     for entity in entities:
       entityPath = "/data/inputs/%s" % entity
       en.refreshEntities(entityPath, sessionKey=self.getSessionKey())
@@ -64,8 +64,12 @@ class ConfigApp(admin.MConfigHandler):
           self.callerArgs.data['hostname'][0] = "https://%s" % hostname
         else:
           self.callerArgs.data['hostname'][0] = "http://%s" % hostname
+    elif name == 'script':
+      # /code42/config/script [script stanza]
+
+      self.itemDefault('devices', '')
 
     self.writeConf('c42config', name, self.callerArgs.data)
-      
+
 # initialize the handler
 admin.init(ConfigApp, admin.CONTEXT_NONE)

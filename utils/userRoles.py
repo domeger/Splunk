@@ -7,8 +7,13 @@
 # Usage: userRoles.py [-s HOSTNAME] [-u USERNAME] [-port PORT] [-p PASSWORD] output
 #
 
+import sys
+import os
 import datetime
 import json
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '_include'))
+
 from _base import C42Script
 
 class UserRoles(C42Script):
