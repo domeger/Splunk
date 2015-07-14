@@ -9,6 +9,10 @@
 
 import datetime
 import json
+import os
+import sys
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '_include'))
 from _base import C42Script
 
 class C42Users(C42Script):
