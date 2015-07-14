@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#!/usr/etc/env python3
 
 # File: users.py
 # Author: Nick Wallin
