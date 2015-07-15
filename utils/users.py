@@ -28,7 +28,7 @@ class C42Users(C42Script):
         content = r.content.decode('UTF-8')
         binary = json.loads(content)
 
-        users = binary['data']['users']
+        users = binary['data']['users'] if 'data' in binary and 'users' in binary['data'] else None
         return users
 
 
