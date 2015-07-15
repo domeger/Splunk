@@ -3,7 +3,10 @@ import sys
 import subprocess
 import glob
 from distutils.spawn import find_executable as which
+import getpass as password
 
+
+import splunk.auth as auth
 import splunk.entity as entity
 
 class SplunkScript(object):
@@ -38,13 +41,22 @@ class SplunkScript(object):
 
 	def getSessionKey(self):
 		if not self.sessionKey:
-			self.sessionKey = sys.stdin.readline().strip()
+			if os.isatty(sys.stdout.fileno()):
+				print('')
+				print('Script running outside of splunkd process. Getting new sessionKey.')
+				splunk_username = raw_input('Splunk Username: ')
+				splunk_password = password.getpass('Splunk Password: ')
+				print('')
+
+				self.sessionKey = auth.getSessionKey(splunk_username, splunk_password)
+			else:
+				self.sessionKey = sys.stdin.readline().strip()
 
 		if len(self.sessionKey) == 0:
 			sys.stderr.write("Did not receive a session key from splunkd. " +
 							"Please enable passAuth in inputs.conf for this " +
 							"script\n")
-			exit(2)
+			sys.exit(2)
 
 		return self.sessionKey
 
@@ -71,7 +83,10 @@ class SplunkScript(object):
 				config['port'] = c['port']
 
 			for i, c in configScriptEntities.items():
-				config['devices'] = c['devices']
+				if c['devices'] != None and len(c['devices']) > 0:
+					config['devices'] = c['devices']
+				else:
+					config['devices'] = None
 
 			self.config = config
 

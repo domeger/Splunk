@@ -38,7 +38,7 @@ class BackupDeltaWrapper(SplunkScript):
                  now.isoformat(),
                  '-o', 'json'
         ];
-        if self.config['devices'] and len(self.config['devices']) > 0:
+        if self.config['devices']:
             args.extend(['-d', self.config['devices']])
 
         self.python(args, write_stdout=True)
