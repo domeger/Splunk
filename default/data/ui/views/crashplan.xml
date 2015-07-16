@@ -7,8 +7,6 @@
         <title>Code42 User Account Types</title>
         <search>
           <query>index="code42" sourcetype=c42userevent | search | eval role=if(searchmatch("roles{}.permissions{}.permission=admin"), "Admin", "User") | top limit=2 role</query>
-          <earliest>-86000s</earliest>
-          <latest>now</latest>
         </search>
         <option name="charting.chart">pie</option>
         <option name="charting.axisY2.enabled">false</option>

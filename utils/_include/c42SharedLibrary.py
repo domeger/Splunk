@@ -660,7 +660,7 @@ class c42Lib(object):
 
 		logging.debug(r.text)
 
-		content = r.content
+		content = r.content.decode('UTF-8')
 		binary = json.loads(content)
 		logging.debug(binary)
 

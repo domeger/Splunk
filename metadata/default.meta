@@ -1,7 +1,7 @@
 # Code42 Application-level permissions
 
 []
-access = read : [ * ], write : [ admin, power ]
+access = read : [ * ], write : [ admin, power, can_delete ]
 
 ### EVENT TYPES
 
