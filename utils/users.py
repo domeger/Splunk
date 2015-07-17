@@ -79,6 +79,7 @@ class C42Users(C42Script):
                     roles_json_string = self.__roles_for_user(user_id)
                     user["roles"] = roles_json_string
                     user["timestamp"] = timestamp
+                    user["event_version"] = 1
                     json_array.append(user)
                 except KeyError:
                     continue
