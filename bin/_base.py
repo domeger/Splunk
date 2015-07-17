@@ -94,6 +94,7 @@ class SplunkScript(object):
 
 	def python(self, arguments, **kwargs):
 		include_console = kwargs.get('include_console', True)
+		output_logfile = kwargs.get('output_logfile', os.path.join(self.appHome, 'log', 'code42.log'))
 		write_stdout = kwargs.get('write_stdout', False)
 
 		write_stdout = write_stdout or (not 'STDOUT' in os.environ or os.environ['STDOUT'] != 'true')
@@ -105,6 +106,12 @@ class SplunkScript(object):
 								'-port', self.config['port'],
 								'-u', self.config['username'],
 								'-p', self.config['password']])
+		if output_logfile:
+			log_folder = os.path.dirname(output_logfile)
+			if not os.path.exists(log_folder):
+				os.makedirs(log_folder)
+
+			arguments.extend([ '-log', output_logfile ])
 
 		if 'PYTHONPATH' in os.environ:
 			# Cross-Platform Python Path

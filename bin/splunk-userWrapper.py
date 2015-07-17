@@ -11,7 +11,7 @@ class UserWrapper(SplunkScript):
         #########################################################
 
         # Set up variables
-        pyScript = os.path.join(self.appHome, 'utils', 'api', 'users.py')
+        pyScript = os.path.join(self.appHome, 'utils', 'users.py')
         tmpEventFile = os.path.join(self.appHome, 'events', 'users.txt')
 
         args = [ pyScript,
