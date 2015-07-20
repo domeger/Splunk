@@ -197,7 +197,7 @@ class BackupMetadataDelta(C42Script):
                 event = {}
                 event['deviceGuid'] = int(deviceGUID)
                 event['timestamp'] = int(version['timestamp'])
-                event['version'] = 1
+                event['schema_version'] = 1
                 file = { 'fullPath': self.__str(version['path']),
                                     'fileName': self.__str(version['path'].split('/')[-1]),
                                     'length': int(version['sourceLength']),
