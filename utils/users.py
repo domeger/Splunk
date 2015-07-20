@@ -45,7 +45,7 @@ class C42Users(C42Script):
             currentPage += 1
         return fullList
 
-    
+
     def description(self):
         return "Export Code42 user information."
 
@@ -79,7 +79,7 @@ class C42Users(C42Script):
                     roles_json_string = self.__roles_for_user(user_id)
                     user["roles"] = roles_json_string
                     user["timestamp"] = timestamp
-                    user["event_version"] = 1
+                    user["schema_version"] = 1
                     json_array.append(user)
                 except KeyError:
                     continue
