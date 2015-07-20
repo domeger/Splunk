@@ -4,7 +4,7 @@ import subprocess
 import glob
 from distutils.spawn import find_executable as which
 import getpass as password
-
+import threading
 
 import splunk.auth as auth
 import splunk.entity as entity
@@ -98,8 +98,10 @@ class SplunkScript(object):
 		write_stdout = kwargs.get('write_stdout', False)
 		write_stderr = kwargs.get('write_stderr', False)
 
-		write_stdout = write_stdout or ('STDOUT' in os.environ and os.environ['STDOUT'] == 'true')
-		write_stderr = write_stderr or ('STDOUT' in os.environ and os.environ['STDOUT'] == 'true')
+		if 'STDOUT' in os.environ and os.environ['STDOUT'] == 'true':
+		  write_stdout = True
+		  write_stderr = True
+		  output_logfile = None
 
 		arguments.insert(0, self.PYTHONPATH)
 		arguments.insert(1, '-u') # Unbuffered `python3` output stream (merge STDERR & logfile lines)
@@ -128,21 +130,31 @@ class SplunkScript(object):
 
 		process = subprocess.Popen(arguments, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-		while process.poll() is None:
-			line = process.stderr.readline()
-			if line:
-				# STDERR line
-				if write_stderr:
-					sys.stderr.write(line)
-			else:
-				# Not STDERR line
-				line = process.stdout.readline()
-				if write_stdout:
-					sys.stdout.write(line)
+		# http://stackoverflow.com/a/9899753/296794
+		def __logMessage(stream, type=0):
+			while True:
+				line = stream.readline()
+				if not line:
+					break
+				if type == 0:
+					if write_stdout:
+						sys.stdout.write(line)
+				if type == 1:
+					if write_stderr:
+						sys.stderr.write(line)
+				if output_logfile and line:
+					with open(output_logfile, 'a') as f:
+						f.write(line)
 
-			if output_logfile and line:
-				with open(output_logfile, 'a') as stream:
-					stream.write(line)
+
+		stdout_thread = threading.Thread(target=__logMessage, args=(process.stdout, 0))
+		stderr_thread = threading.Thread(target=__logMessage, args=(process.stderr, 1))
+
+		stdout_thread.start()
+		stderr_thread.start()
+
+		stdout_thread.join()
+		stderr_thread.join()
 
 	def main(self):
 		return
