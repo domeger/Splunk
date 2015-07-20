@@ -82,10 +82,10 @@ class SplunkScript(object):
 					config['password'] = c['clear_password']
 
 			for i, c in configConsoleEntities.items():
-                                if 'hostname' in c and c['hostname']:
-				        config['hostname'] = c['hostname']
-                                if 'port' in c and c['port']:
-				        config['port'] = c['port']
+				if 'hostname' in c and c['hostname']:
+					config['hostname'] = c['hostname']
+				if 'port' in c and c['port']:
+					config['port'] = c['port']
 
 			for i, c in configScriptEntities.items():
 				if 'devices' in c and c['devices'] != None and len(c['devices']) > 0:
@@ -98,6 +98,7 @@ class SplunkScript(object):
 			    'hostname' not in config or
 			    'port' not in config or
 			    'devices' not in config):
+
 				# sleep a second, try again
 				time.sleep(1)
 				return self.getConfig(attempt + 1)
