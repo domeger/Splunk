@@ -2,6 +2,7 @@ import os
 import sys
 import subprocess
 import glob
+import time
 from distutils.spawn import find_executable as which
 import getpass as password
 
@@ -60,8 +61,8 @@ class SplunkScript(object):
 
 		return self.sessionKey
 
-	def getConfig(self):
-		if not self.config:
+	def getConfig(self, attempt=0):
+		if not self.config and attempt < 20:
 			sessionKey = self.getSessionKey()
 
 			try:
@@ -75,20 +76,34 @@ class SplunkScript(object):
 			config = {}
 
 			for i, c in passwordEntities.items():
-				config['username'] = c['username']
-				config['password'] = c['clear_password']
+				if 'username' in c and c['username']:
+					config['username'] = c['username']
+				if 'clear_password' in c and c['clear_password']:
+					config['password'] = c['clear_password']
 
 			for i, c in configConsoleEntities.items():
-				config['hostname'] = c['hostname']
-				config['port'] = c['port']
+				if 'hostname' in c and c['hostname']:
+					config['hostname'] = c['hostname']
+				if 'port' in c and c['port']:
+					config['port'] = c['port']
 
 			for i, c in configScriptEntities.items():
-				if c['devices'] != None and len(c['devices']) > 0:
+				if 'devices' in c and c['devices'] != None and len(c['devices']) > 0:
 					config['devices'] = c['devices']
 				else:
 					config['devices'] = None
 
-			self.config = config
+			if ('username' not in config or
+			    'password' not in config or
+			    'hostname' not in config or
+			    'port' not in config or
+			    'devices' not in config):
+
+				# sleep a second, try again
+				time.sleep(1)
+				return self.getConfig(attempt + 1)
+			else:
+				self.config = config
 
 		return self.config
 

@@ -48,8 +48,6 @@ class ConfigApp(admin.MConfigHandler):
     name = self.callerArgs.id
     args = self.callerArgs
 
-    self.writeInputs()
-
     if name == 'console':
       # /code42/config/console [console stanza]
 
@@ -70,6 +68,7 @@ class ConfigApp(admin.MConfigHandler):
       self.itemDefault('devices', '')
 
     self.writeConf('c42config', name, self.callerArgs.data)
+    self.writeInputs()
 
 # initialize the handler
 admin.init(ConfigApp, admin.CONTEXT_NONE)
