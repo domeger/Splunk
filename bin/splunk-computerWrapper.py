@@ -11,7 +11,7 @@ class ComputerWrapper(SplunkScript):
         #############################################################
 
         # Set up variables
-        pyScript = os.path.join(self.appHome, 'utils', 'api', 'computers.py')
+        pyScript = os.path.join(self.appHome, 'utils', 'computers.py')
         tmpEventFile = os.path.join(self.appHome, 'events', 'computers.txt')
 
         args = [ pyScript,
@@ -20,7 +20,7 @@ class ComputerWrapper(SplunkScript):
         self.python(args)
 
         # Reformat events for Splunk (JSON blobs per line)
-        with open(tmpEventFile) as data_file:
+        with open(tmpEventFile, 'r') as data_file:
             data = json.load(data_file)
 
             for computer_dict in data:

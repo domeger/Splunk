@@ -2,6 +2,7 @@ import os
 import sys
 import subprocess
 import glob
+import time
 from distutils.spawn import find_executable as which
 import getpass as password
 
@@ -62,6 +63,7 @@ class SplunkScript(object):
 
 	def getConfig(self):
 		if not self.config:
+			time.sleep(5)
 			sessionKey = self.getSessionKey()
 
 			try:
