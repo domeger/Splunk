@@ -36,6 +36,7 @@ class C42Computers(C42Script):
             for computer in computers:
                 try:
                     computer['timestamp'] = timestamp
+                    computer['schema_version'] = 1
                     json_array.append(computer)
                 except KeyError:
                     continue
