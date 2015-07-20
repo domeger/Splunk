@@ -96,10 +96,13 @@ class SplunkScript(object):
 		include_console = kwargs.get('include_console', True)
 		output_logfile = kwargs.get('output_logfile', os.path.join(self.appHome, 'log', 'code42.log'))
 		write_stdout = kwargs.get('write_stdout', False)
+		write_stderr = kwargs.get('write_stderr', False)
 
-		write_stdout = write_stdout or (not 'STDOUT' in os.environ or os.environ['STDOUT'] != 'true')
+		write_stdout = write_stdout or ('STDOUT' in os.environ and os.environ['STDOUT'] == 'true')
+		write_stderr = write_stderr or ('STDOUT' in os.environ and os.environ['STDOUT'] == 'true')
 
 		arguments.insert(0, self.PYTHONPATH)
+		arguments.insert(1, '-u') # Unbuffered `python3` output stream (merge STDERR & logfile lines)
 
 		if include_console:
 			arguments.extend([	'-s', self.config['hostname'],
@@ -123,11 +126,23 @@ class SplunkScript(object):
 			# Unix (non-Linux) Library Path
 			del os.environ['DYLD_LIBRARY_PATH']
 
-		if not write_stdout:
-			FNULL = open(os.devnull, 'w')
-			return subprocess.call(arguments, stdout=FNULL, stderr=sys.stderr)
-		else:
-			return subprocess.call(arguments)
+		process = subprocess.Popen(arguments, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+		while process.poll() is None:
+			line = process.stderr.readline()
+			if line:
+				# STDERR line
+				if write_stderr:
+					sys.stderr.write(line)
+			else:
+				# Not STDERR line
+				line = process.stdout.readline()
+				if write_stdout:
+					sys.stdout.write(line)
+
+			if output_logfile and line:
+				with open(output_logfile, 'a') as stream:
+					stream.write(line)
 
 	def main(self):
 		return

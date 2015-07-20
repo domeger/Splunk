@@ -72,6 +72,9 @@ class BackupMetadataDelta(C42Script):
             else:
                 self.args.color = False
 
+        if self.args.logfile:
+            self.logfile = self.args.logfile
+
         if self.args.date1 > self.args.date2:
             # Always put the earlier date first when calculating delta.
             self.args.date1, self.args.date2 = self.args.date2, self.args.date1
