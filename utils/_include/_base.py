@@ -54,6 +54,9 @@ class C42Script(object):
 	def log(self, string, **kwargs):
 		skip_time = kwargs.get('skip_time', False)
 
+		if self.logfile and len(string) == 0:
+			return
+
 		with smart_open(self.logfile) as output:
 			if self.logfile and not skip_time:
 				date = datetime.datetime.now()

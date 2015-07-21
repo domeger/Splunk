@@ -142,7 +142,7 @@ class SplunkScript(object):
 				if type == 1:
 					if write_stderr:
 						sys.stderr.write(line)
-				if output_logfile and line:
+				if output_logfile and line and ((not write_stdout and type == 0) or type != 0):
 					with open(output_logfile, 'a') as f:
 						f.write(line)
 
