@@ -5,7 +5,7 @@ import glob
 import time
 from distutils.spawn import find_executable as which
 import getpass as password
-
+import threading
 
 import splunk.auth as auth
 import splunk.entity as entity
@@ -109,17 +109,29 @@ class SplunkScript(object):
 
 	def python(self, arguments, **kwargs):
 		include_console = kwargs.get('include_console', True)
+		output_logfile = kwargs.get('output_logfile', os.path.join(self.appHome, 'log', 'code42.log'))
 		write_stdout = kwargs.get('write_stdout', False)
+		write_stderr = kwargs.get('write_stderr', False)
 
-		write_stdout = write_stdout or (not 'STDOUT' in os.environ or os.environ['STDOUT'] != 'true')
+		if 'STDOUT' in os.environ and os.environ['STDOUT'] == 'true':
+		  write_stdout = True
+		  write_stderr = True
+		  output_logfile = None
 
 		arguments.insert(0, self.PYTHONPATH)
+		arguments.insert(1, '-u') # Unbuffered `python3` output stream (merge STDERR & logfile lines)
 
 		if include_console:
 			arguments.extend([	'-s', self.config['hostname'],
 								'-port', self.config['port'],
 								'-u', self.config['username'],
 								'-p', self.config['password']])
+		if output_logfile:
+			log_folder = os.path.dirname(output_logfile)
+			if not os.path.exists(log_folder):
+				os.makedirs(log_folder)
+
+			arguments.extend([ '-log', output_logfile ])
 
 		if 'PYTHONPATH' in os.environ:
 			# Cross-Platform Python Path
@@ -131,11 +143,33 @@ class SplunkScript(object):
 			# Unix (non-Linux) Library Path
 			del os.environ['DYLD_LIBRARY_PATH']
 
-		if not write_stdout:
-			FNULL = open(os.devnull, 'w')
-			return subprocess.call(arguments, stdout=FNULL, stderr=sys.stderr)
-		else:
-			return subprocess.call(arguments)
+		process = subprocess.Popen(arguments, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+		# http://stackoverflow.com/a/9899753/296794
+		def __logMessage(stream, type=0):
+			while True:
+				line = stream.readline()
+				if not line:
+					break
+				if type == 0:
+					if write_stdout:
+						sys.stdout.write(line)
+				if type == 1:
+					if write_stderr:
+						sys.stderr.write(line)
+				if output_logfile and line and ((not write_stdout and type == 0) or type != 0):
+					with open(output_logfile, 'a') as f:
+						f.write(line)
+
+
+		stdout_thread = threading.Thread(target=__logMessage, args=(process.stdout, 0))
+		stderr_thread = threading.Thread(target=__logMessage, args=(process.stderr, 1))
+
+		stdout_thread.start()
+		stderr_thread.start()
+
+		stdout_thread.join()
+		stderr_thread.join()
 
 	def main(self):
 		return

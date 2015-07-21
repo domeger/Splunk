@@ -12,6 +12,7 @@ import argparse
 import contextlib
 import getpass
 import json
+import datetime
 
 from c42SharedLibrary import c42Lib
 import _c42_csv as csv
@@ -50,9 +51,18 @@ class C42Script(object):
 		self.setup_parser(self.arg_parser)
 
 	# Public utilities
-	def log(self, string):
+	def log(self, string, **kwargs):
+		skip_time = kwargs.get('skip_time', False)
+
+		if self.logfile and len(string) == 0:
+			return
+
 		with smart_open(self.logfile) as output:
-			output.write('%s\n' % string)
+			if self.logfile and not skip_time:
+				date = datetime.datetime.now()
+				output.write('%s %s\n' % (date.strftime("%Y-%m-%d %H:%M:%S"), string))
+			else:
+				output.write('%s\n' % string)
 
 	# Metadata
 	def description(self):
@@ -63,6 +73,7 @@ class C42Script(object):
 		parser.add_argument('-u', dest='username', default='admin', help='Code42 Console Username')
 		parser.add_argument('-port', dest='port', default='4285', help='Code42 Console Port')
 		parser.add_argument('-p', dest='password', default='', help='Code42 Console password (replaces prompt)')
+		parser.add_argument('-log', dest='logfile', default=None, help='Logfile to print informational output messages (instead of STDOUT)')
 
 	# Convenience methods
 	def search_devices(self, queries, type='CrashPlan'):
@@ -139,6 +150,10 @@ class C42Script(object):
 	def start(self):
 		if not self.args:
 			self.args = self.arg_parser.parse_args()
+
+		if self.args.logfile and not self.logfile:
+			self.logfile = self.args.logfile
+			self.log('------------------------------------------', skip_time=True)
 
 	def end(self):
 		self.log('')
