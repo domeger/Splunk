@@ -92,6 +92,7 @@ class C42Script(object):
             sys.exit(2)
 
         return orgs[0]
+
     def search_devices(self, queries, type='CrashPlan'):
         computers = []
         if not queries:
