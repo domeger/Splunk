@@ -71,11 +71,27 @@ class C42Script(object):
     def setup_parser(self, parser):
         parser.add_argument('-s', dest='hostname', default='https://spyder.code42.com', help='Code42 Console URL (without port)')
         parser.add_argument('-u', dest='username', default='admin', help='Code42 Console Username')
-        parser.add_argument('-port', dest='port', default='4285', help='Code42 Console Port')
+        parser.add_argument('-port', dest='port', default=4285, type=int, help='Code42 Console Port')
         parser.add_argument('-p', dest='password', default='', help='Code42 Console password (replaces prompt)')
         parser.add_argument('-log', dest='logfile', default=None, help='Logfile to print informational output messages (instead of STDOUT)')
 
     # Convenience methods
+    def search_orgs(self, orgName):
+        self.log(">> Querying organization information.")
+
+        orgParams = {}
+        orgParams['q'] = orgName
+        orgPayload = {}
+        r = self.console.executeRequest("get", self.console.cp_api_org, orgParams, orgPayload)
+        content = r.content.decode('UTF-8')
+        binary = json.loads(content)
+        orgs = binary['data']['orgs']
+
+        if len(orgs) == 0:
+            sys.stderr.write("ERROR: No organizations found with the name '%s'.\n" % orgName)
+            sys.exit(2)
+
+        return orgs[0]
     def search_devices(self, queries, type='CrashPlan'):
         computers = []
         if not queries:
@@ -101,21 +117,13 @@ class C42Script(object):
             return computers
 
         for query in queries:
-
             params = {}
             params['active'] = 'true'
 
             if query.startswith('org:'):
                 orgQuery = query[4:]
-                self.log(">> Querying organization information.")
-                # Querying organization information.
-                orgParams = {}
-                orgParams['q'] = orgQuery
-                orgPayload = {}
-                r = self.console.executeRequest("get", self.console.cp_api_org, orgParams, orgPayload)
-                content = r.content.decode('UTF-8')
-                binary = json.loads(content)
-                orgUid = binary['data']['orgs'][0]['orgUid']
+                # Querying organization information
+                orgUid = self.search_orgs(orgQuery)['orgUid']
 
                 self.log(">> Querying all computers inside organization " + orgUid + ".")
                 # Querying all computers inside organization.
@@ -155,16 +163,31 @@ class C42Script(object):
             self.logfile = self.args.logfile
             self.log('------------------------------------------', skip_time=True)
 
+        if len(self.args.hostname) > 0 and not self.args.hostname.startswith('http'):
+          # Try and figure out a protocol for this hostname
+
+          if self.args.port in [443, 4285, 7285]:
+            self.args.hostname = "https://%s" % self.args.hostname
+          else:
+            self.args.hostname = "http://%s" % self.args.hostname
+
     def end(self):
         self.log('')
 
     def outline(self):
-        self.log('> API URL:\t' + self.args.hostname + ':' + self.args.port)
+        if ((self.args.hostname.startswith('https:') and self.args.port == 443) or
+            (self.args.hostname.startswith('http:') and self.args.port == 80) or
+            self.args.port <= 0):
+            # Don't display the port if it's the default port for that protocol (443 or 80)
+            self.log('> API URL:\t' + self.args.hostname)
+        else:
+            self.log('> API URL:\t' + self.args.hostname + ':' + str(self.args.port))
         self.log('> Console User:\t' + self.args.username)
 
     def prepare(self):
         self.console.cp_host = self.args.hostname
-        self.console.cp_port = self.args.port
+        # Use port `0` for excluding port in HTTP requests (for some port-forwarding environments).
+        self.console.cp_port = str(self.args.port) if self.args.port > 0 else ""
         self.console.cp_username = self.args.username
 
         if len(self.args.password) > 0:
