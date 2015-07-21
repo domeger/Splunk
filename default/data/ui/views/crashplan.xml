@@ -6,7 +6,7 @@
       <chart>
         <title>Code42 User Account Types</title>
         <search>
-          <query>index="code42" sourcetype=c42userevent earliest=-86400second | search | eval role=if(searchmatch("roles{}.permissions{}.permission=admin"), "Admin", "User") | top limit=2 role</query>
+          <query>index="code42" sourcetype=c42userevent earliest=-1d | search | eval role=if(searchmatch("roles{}.permissions{}.permission=admin"), "Admin", "User") | top limit=2 role</query>
         </search>
         <option name="charting.chart">pie</option>
         <option name="charting.axisY2.enabled">false</option>
