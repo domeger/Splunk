@@ -1,35 +1,35 @@
 <setup>
-	<block title="Configure Code42">
-		<text>You need to set up a Splunk user account with your Code42 Server.</text>
-	</block>
-	<block title="Code42 Console Server" endpoint="code42/config" entity="console">
-		<input field="hostname">
-			<label>Console Hostname</label>
-			<type>text</type>
-		</input>
+    <block title="Configure Code42">
+        <text>You need to set up a Splunk user account with your Code42 Server.</text>
+    </block>
+    <block title="Code42 Console Server" endpoint="code42/config" entity="console">
+        <input field="hostname">
+            <label>Console Hostname</label>
+            <type>text</type>
+        </input>
 
-		<input field="port">
-			<label>Console Port</label>
-			<type>text</type>
-		</input>
-	</block>
-	<block title="Event Filter" endpoint="code42/config" entity="script">
-		<text>Filter imported objects to only items inside the defined list of devices or organizations.</text>
-		<text>Device queries should be a comma separated list of deviceGUIDs, device names, or organization names (prefixed with "org:" each time). Blank value will import all objects.</text>
-		<input field="devices">
-			<label>Event Filter Query</label>
-			<type>text</type>
-		</input>
-	</block>
-	<block title="Code42 Console User" endpoint="storage/passwords" entity="_new">
-		<input field="name">
-			<label>Console Username</label>
-			<type>text</type>
-		</input>
+        <input field="port">
+            <label>Console Port</label>
+            <type>text</type>
+        </input>
+    </block>
+    <block title="Event Filter" endpoint="code42/config" entity="script">
+        <text>Filter imported objects to only items inside the defined list of devices or organizations.</text>
+        <text>Device queries should be a comma separated list of deviceGUIDs, device names, or organization names (prefixed with "org:" each time). Blank value will import all objects.</text>
+        <input field="devices">
+            <label>Event Filter Query</label>
+            <type>text</type>
+        </input>
+    </block>
+    <block title="Code42 Console User" endpoint="storage/passwords" entity="_new">
+        <input field="name">
+            <label>Console Username</label>
+            <type>text</type>
+        </input>
 
-		<input field="password">
-			<label>Console Password</label>
-			<type>password</type>
-		</input>
-	</block>
+        <input field="password">
+            <label>Console Password</label>
+            <type>password</type>
+        </input>
+    </block>
 </setup>

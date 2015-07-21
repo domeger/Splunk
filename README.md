@@ -15,12 +15,12 @@ The Python scripts embedded inside this app have several required dependencies
 that need to be installed for events to import successfully.
 
 1. Check your Splunk server's system Python path.
-	- For stability, you should ensure that `python3` is installed on your
-	system&mdash;this will be used automatically by the Code42 app. The embedded
-	Python included with Splunk does not support all the requirements of this app.
-	- System `python` will be used if `python3` is not found in your `$PATH`, but
-	if Python is not located at `/usr/bin/python` you will need to update the
-	contents of `bin/_base.py` with the correct path.
+    - For stability, you should ensure that `python3` is installed on your
+    system&mdash;this will be used automatically by the Code42 app. The embedded
+    Python included with Splunk does not support all the requirements of this app.
+    - System `python` will be used if `python3` is not found in your `$PATH`, but
+    if Python is not located at `/usr/bin/python` you will need to update the
+    contents of `bin/_base.py` with the correct path.
 1. Install Python dependencies using [pip][pip] (see below).
 
 ```
@@ -42,10 +42,10 @@ the contents.
 $ git clone [clone-url] Code42-Splunk
 $ cd Code42-Splunk
 $ git archive \
-	--format=tar.gz \
-	--prefix=code42/ \
-	--output=code42.tar.gz \
-	HEAD
+    --format=tar.gz \
+    --prefix=code42/ \
+    --output=code42.tar.gz \
+    HEAD
 $ mv code42.tar.gz code42.spl
 ```
 
@@ -81,8 +81,8 @@ the embedded Splunk python enviornment.
 $ export SPLUNK_HOME="/path/to/Splunk"
 $ $SPLUNK_HOME/bin/splunk login # Enter username & password
 $ $SPLUNK_HOME/bin/splunk cmd \
-	python $SPLUNK_HOME/etc/apps/code42/bin/splunk-test.py <<< \
-	$(xmllint --xpath "//auth/sessionkey/text()" "$(find ~/.splunk -type f)")
+    python $SPLUNK_HOME/etc/apps/code42/bin/splunk-test.py <<< \
+    $(xmllint --xpath "//auth/sessionkey/text()" "$(find ~/.splunk -type f)")
 ```
 
 The script should run successfully.
@@ -90,7 +90,7 @@ The script should run successfully.
 ## Notes & Caveats
 
 See [CAVEATS.md][caveats] for information about a few caveats in the Splunk
-app, like changing your API User Credentials. 
+app, like changing your API User Credentials.
 
 ## Data Imported
 
