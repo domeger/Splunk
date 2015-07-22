@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
 # File: backupMetadataDelta.py
 # Author: Hank Brekke
@@ -152,7 +152,7 @@ class BackupMetadataDelta(C42Script):
         self.log('> Getting delta for device %s.' % deviceGUID)
 
         self.log('>> Getting dataKeyToken for device.')
-        # Getting archiveGuid for device.
+        # Getting dataKeyToken for device.
         payload = {
             'computerGuid': deviceGUID
         }
@@ -162,7 +162,7 @@ class BackupMetadataDelta(C42Script):
 
         with self.storage_server(device_guid=deviceGUID) as server:
             self.log('>> Getting all file versions for device.')
-            # Getting all file versions for device archive.
+            # Getting all file versions for device.
             params = {}
             params['idType'] = 'guid'
             params['decryptPaths'] = 'true'

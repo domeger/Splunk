@@ -167,7 +167,8 @@ class C42Script(object):
             raise Exception("You need a device_guid or plan_uid to authorize a storage server.")
 
         if deviceGuid:
-            # Get backup planUid from deviceGuid
+            self.log('>>> Get backup planUid from deviceGuid %s.' % deviceGuid)
+            # Get backup planUid from deviceGuid.
             params = {
                 'sourceComputerGuid': deviceGuid,
                 'planTypes': 'BACKUP'
@@ -181,10 +182,14 @@ class C42Script(object):
         if not planUid:
             raise Exception("There are no backup planUid's for this device. Backup likely has not started, or deviceGuid is invalid.")
 
+        self.log('>>> Get storage locations for planUid %s.' % planUid)
+        # Get Storage locations for planUid.
         r = self.console.executeRequest("get", "%s/%s" % (self.console.cp_api_storage, planUid), {}, {})
         storage_serversResponse = json.loads(r.content.decode("UTF-8"))
         storage_servers = storage_serversResponse['data'] if 'data' in storage_serversResponse else None
 
+        self.log('>>> Get information about all storage destinations.')
+        # Get Storage locations for planUid.
         r = self.console.executeRequest("get", self.console.cp_api_destination, {}, {})
         all_serversResponse = json.loads(r.content.decode("UTF-8"))
         all_servers = all_serversResponse['data']['destinations'] if 'data' in all_serversResponse else None
@@ -192,7 +197,8 @@ class C42Script(object):
         for serverGuid, server in storage_servers.items():
             destination = [x for x in all_servers if x['guid'] == serverGuid][0]
             if server['url'] == "%s:%s" % (authority_host, authority_port):
-                # Storage is on the authority => we don't need to do any special authorization.
+                self.log(">>> Storage is on master, we don't need to do special authorization.")
+                # Storage is on master, we don't need to do any special authorization.
                 break
             elif destination['type'] == 'CLUSTER':
                 # Storage is on a separate CLUSTER server (servers are owned by the master server).
@@ -200,12 +206,12 @@ class C42Script(object):
                 content = r.content.decode('UTF-8')
                 binary = json.loads(content)
                 if binary['data'] and binary['data']['success'] == True:
-                    # We like this storage node, so we'll use this one.
+                    self.log(">>> Authorizing against storage server for proper connection URL.")
+                    # Authorizing against storage server for proper connection URL.
                     payload = {
                         "planUid": planUid,
                         "destinationGuid": serverGuid
                     }
-
                     r = c42Lib.executeRequest("post", c42Lib.cp_api_storageAuthToken, {}, payload)
                     storage_singleUseTokenResponse = json.loads(r.content.decode("UTF-8"))['data']
                     (storage_protocol, storage_host, storage_port) = storage_singleUseTokenResponse['serverUrl'].split(':')
