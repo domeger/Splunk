@@ -41,6 +41,10 @@ class c42Lib(object):
     #cp_password = "admin"
 
     # REST API Calls
+    cp_api_ping = "/api/Ping"
+    cp_api_storage = "/api/Storage"
+    cp_api_destination = "/api/Destination"
+    cp_api_storageAuthToken = "/api/StorageAuthToken"
     cp_api_userRole = "/api/UserRole"
     cp_api_user = "/api/User"
     cp_api_org = "/api/Org"

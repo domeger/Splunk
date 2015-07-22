@@ -155,6 +155,77 @@ class C42Script(object):
         self.log('>> Found ' + str(len(computers)) + ' devices matching queries.')
         return computers
 
+    @contextlib.contextmanager
+    def storage_server(self, **kwargs):
+        planUid = kwargs.get('plan_uid', False)
+        deviceGuid = kwargs.get('device_guid', False)
+
+        authority_host = self.console.cp_host
+        authority_port = self.console.cp_port
+
+        if not deviceGuid and not planUid:
+            raise Exception("You need a device_guid or plan_uid to authorize a storage server.")
+
+        if deviceGuid:
+            # Get backup planUid from deviceGuid
+            params = {
+                'sourceComputerGuid': deviceGuid,
+                'planTypes': 'BACKUP'
+            }
+            r = self.console.executeRequest("get", self.console.cp_api_plan, params, {})
+            backup_plansResponse = json.loads(r.content.decode("UTF-8"))
+            backup_plans = backup_plansResponse['data'] if 'data' in backup_plansResponse else None
+            if backup_plans and len(backup_plans) > 0:
+                planUid = backup_plans[0]['planUid']
+
+        if not planUid:
+            raise Exception("There are no backup planUid's for this device. Backup likely has not started, or deviceGuid is invalid.")
+
+        r = self.console.executeRequest("get", "%s/%s" % (self.console.cp_api_storage, planUid), {}, {})
+        storage_serversResponse = json.loads(r.content.decode("UTF-8"))
+        storage_servers = storage_serversResponse['data'] if 'data' in storage_serversResponse else None
+
+        r = self.console.executeRequest("get", self.console.cp_api_destination, {}, {})
+        all_serversResponse = json.loads(r.content.decode("UTF-8"))
+        all_servers = all_serversResponse['data']['destinations'] if 'data' in all_serversResponse else None
+
+        for serverGuid, server in storage_servers.items():
+            destination = [x for x in all_servers if x['guid'] == serverGuid][0]
+            if server['url'] == "%s:%s" % (authority_host, authority_port):
+                # Storage is on the authority => we don't need to do any special authorization.
+                break
+            elif destination['type'] == 'CLUSTER':
+                # Storage is on a separate CLUSTER server (servers are owned by the master server).
+                r = self.console.executeRequest("get", self.console.cp_api_ping, {}, {})
+                content = r.content.decode('UTF-8')
+                binary = json.loads(content)
+                if binary['data'] and binary['data']['success'] == True:
+                    # We like this storage node, so we'll use this one.
+                    payload = {
+                        "planUid": planUid,
+                        "destinationGuid": serverGuid
+                    }
+
+                    r = c42Lib.executeRequest("post", c42Lib.cp_api_storageAuthToken, {}, payload)
+                    storage_singleUseTokenResponse = json.loads(r.content.decode("UTF-8"))['data']
+                    (storage_protocol, storage_host, storage_port) = storage_singleUseTokenResponse['serverUrl'].split(':')
+                    storage_host = "%s:%s" % (storage_protocol, storage_host)
+
+                    self.console.cp_host = storage_host
+                    self.console.cp_port = storage_port
+
+                    break
+            elif destination['type'] == 'PROVIDER':
+                # Storage is on a PROVIDER server (Code42 Hybrid Cloud, etc. not owned by the master server).
+                raise Exception("Provider storage authorization is currently unimplemented.")
+
+        try:
+            yield self.console
+        finally:
+            self.console.cp_host = authority_host
+            self.console.cp_port = authority_port
+
+
     # Lifecycle
     def start(self):
         if not self.args:

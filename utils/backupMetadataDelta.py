@@ -151,44 +151,31 @@ class BackupMetadataDelta(C42Script):
     def calculateDelta(self, deviceGUID):
         self.log('> Getting delta for device %s.' % deviceGUID)
 
-        self.log('>> Getting archiveGuid for device.')
+        self.log('>> Getting dataKeyToken for device.')
         # Getting archiveGuid for device.
-        params = {}
-        params['backupSourceGuid'] = deviceGUID
-        r = self.console.executeRequest("get", self.console.cp_api_archive, params, {})
-        content = r.content.decode('UTF-8')
-        binary = json.loads(content)
+        payload = {
+            'computerGuid': deviceGUID
+        }
+        r = self.console.executeRequest("post", self.console.cp_api_dataKeyToken, {}, payload)
+        dataKeyTokenResponse = json.loads(r.content.decode("UTF-8"))
+        dataKeyToken = dataKeyTokenResponse['data']['dataKeyToken'] if 'data' in dataKeyTokenResponse else none
 
-        if not 'archives' in binary['data'] or len(binary['data']['archives']) == 0:
-            raise Exception('Computer GUID does not have a backup archive.')
-
-        archiveGUID = binary['data']['archives'][0]['archiveGuid']
-
-        self.log('>> Getting Backup planUid from archiveGuid.')
-        # Getting Backup planUid from archiveGuid.
-        params = {}
-        params['archiveGuid'] = archiveGUID
-        r = self.console.executeRequest("get", self.console.cp_api_plan, params, {})
-        content = r.content.decode('UTF-8')
-        binary = json.loads(content)
-
-        backupPlanUid = 0
-        for backupPlan in binary['data']:
-            if backupPlan['planType'] == 'BACKUP':
-                backupPlanUid = backupPlan['planUid']
-
-        if backupPlanUid == 0:
-            raise Exception('Archive GUID does not have a backup plan.')
-
-        self.log('>> Getting all file versions for Backup planUid.')
-        # Getting all file versions for Backup planUid.
-        params = {}
-        params['idType'] = 'planUid'
-        params['decryptPaths'] = 'true'
-        params['includeAllVersions'] = 'true'
-        r = self.console.executeRequest("get", self.console.cp_api_archiveMetadata + "/" + backupPlanUid, params, {})
-        content = r.content.decode('UTF-8')
-        binary = json.loads(content)
+        with self.storage_server(device_guid=deviceGUID) as server:
+            self.log('>> Getting all file versions for device.')
+            # Getting all file versions for device archive.
+            params = {}
+            params['idType'] = 'guid'
+            params['decryptPaths'] = 'true'
+            params['dataKeyToken'] = dataKeyToken
+            '''
+            We want to `includeAllVersions` for full history, but v1 archive (CrashPlan) support
+            is not available until server is v5.0, so we'll update this script when the minimum version
+            for these scripts reaches v5.0 and later.
+            '''
+            # params['includeAllVersions'] = 'true'
+            r = self.console.executeRequest("get", self.console.cp_api_archiveMetadata + "/" + deviceGUID, params, {})
+            content = r.content.decode('UTF-8')
+            binary = json.loads(content)
 
         self.log('>> Filtering file versions to specified range.')
         # Filtering file versions to specified range.
