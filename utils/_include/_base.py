@@ -13,6 +13,7 @@ import contextlib
 import getpass
 import json
 import datetime
+import urllib
 
 from c42SharedLibrary import c42Lib
 import _c42_csv as csv
@@ -156,46 +157,44 @@ class C42Script(object):
         return computers
 
     @contextlib.contextmanager
-    def storage_server(self, **kwargs):
-        planUid = kwargs.get('plan_uid', False)
-        deviceGuid = kwargs.get('device_guid', False)
-
+    def storage_server(self, plan_uid=None, device_guid=None):
         authority_host = self.console.cp_host
         authority_port = self.console.cp_port
 
-        if not deviceGuid and not planUid:
+        if not device_guid and not plan_uid:
             raise Exception("You need a device_guid or plan_uid to authorize a storage server.")
 
-        if deviceGuid:
-            self.log('>>> Get backup planUid from deviceGuid %s.' % deviceGuid)
+        if device_guid:
+            self.log('>>> Get backup planUid from deviceGuid %s.' % device_guid)
             # Get backup planUid from deviceGuid.
             params = {
-                'sourceComputerGuid': deviceGuid,
+                'sourceComputerGuid': device_guid,
                 'planTypes': 'BACKUP'
             }
             r = self.console.executeRequest("get", self.console.cp_api_plan, params, {})
-            backup_plansResponse = json.loads(r.content.decode("UTF-8"))
-            backup_plans = backup_plansResponse['data'] if 'data' in backup_plansResponse else None
+            backup_plans_response = json.loads(r.content.decode("UTF-8"))
+            backup_plans = backup_plans_response['data'] if 'data' in backup_plans_response else None
             if backup_plans and len(backup_plans) > 0:
-                planUid = backup_plans[0]['planUid']
+                plan_uid = backup_plans[0]['planUid']
 
-        if not planUid:
+        if not plan_uid:
             raise Exception("There are no backup planUid's for this device. Backup likely has not started, or deviceGuid is invalid.")
 
-        self.log('>>> Get storage locations for planUid %s.' % planUid)
+        self.log('>>> Get storage locations for planUid %s.' % plan_uid)
         # Get Storage locations for planUid.
-        r = self.console.executeRequest("get", "%s/%s" % (self.console.cp_api_storage, planUid), {}, {})
-        storage_serversResponse = json.loads(r.content.decode("UTF-8"))
-        storage_servers = storage_serversResponse['data'] if 'data' in storage_serversResponse else None
+        r = self.console.executeRequest("get", "%s/%s" % (self.console.cp_api_storage, plan_uid), {}, {})
+        storage_servers_response = json.loads(r.content.decode("UTF-8"))
+        storage_servers = storage_servers_response['data'] if 'data' in storage_servers_response else None
 
         self.log('>>> Get information about all storage destinations.')
         # Get Storage locations for planUid.
         r = self.console.executeRequest("get", self.console.cp_api_destination, {}, {})
-        all_serversResponse = json.loads(r.content.decode("UTF-8"))
-        all_servers = all_serversResponse['data']['destinations'] if 'data' in all_serversResponse else None
+        all_servers_response = json.loads(r.content.decode("UTF-8"))
+        all_servers = all_servers_response['data']['destinations'] if 'data' in all_servers_response else None
 
-        for serverGuid, server in storage_servers.items():
-            destination = [x for x in all_servers if x['guid'] == serverGuid][0]
+        # TODO: We need to ping each server and choose the fastest one, rather than going down the list serially.
+        for server_guid, server in storage_servers.items():
+            destination = [x for x in all_servers if x['guid'] == server_guid][0]
             if server['url'] == "%s:%s" % (authority_host, authority_port):
                 # No special authorization is required for MASTER servers.
 
@@ -205,20 +204,19 @@ class C42Script(object):
             else:
                 # Storage is on a separate server, and we need to authorize against it.
                 r = self.console.executeRequest("get", self.console.cp_api_ping, {}, {})
-                content = r.content.decode('UTF-8')
-                binary = json.loads(content)
-                if binary['data'] and binary['data']['success'] == True:
+                if r.status_code == 200:
                     self.log(">>> Checking connection URL accuracy for storage server.")
                     # Checking connection URL accuracy for storage server.
                     payload = {
-                        "planUid": planUid,
-                        "destinationGuid": serverGuid
+                        "planUid": str(plan_uid),
+                        "destinationGuid": server_guid
                     }
                     r = c42Lib.executeRequest("post", c42Lib.cp_api_storageAuthToken, {}, payload)
-                    storage_singleUseTokenResponse = json.loads(r.content.decode("UTF-8"))
-                    (storage_protocol, storage_host, storage_port) = storage_singleUseTokenResponse['data']['serverUrl'].split(':')
-                    storage_host = "%s:%s" % (storage_protocol, storage_host)
-                    storage_singleUseToken = storage_singleUseTokenResponse['data']['loginToken']
+                    storage_singleUseToken_response = json.loads(r.content.decode("UTF-8"))
+                    storage_url = urllib.parse.urlparse(storage_singleUseToken_response['data']['serverUrl'])
+                    storage_host = "%s://%s" % (storage_url.scheme, storage_url.hostname)
+                    storage_port = str(storage_url.port) if storage_url.port else ''
+                    storage_singleUseToken = storage_singleUseToken_response['data']['loginToken']
 
                     self.console.cp_host = storage_host
                     self.console.cp_port = storage_port
@@ -228,9 +226,9 @@ class C42Script(object):
                         # Authorizing for a PROVIDER server (Code42 Hybrid Cloud, etc. not owned by the master server).
                         c42Lib.cp_authorization = "LOGIN_TOKEN %s" % storage_singleUseToken
                         r = c42Lib.executeRequest("post", c42Lib.cp_api_authToken, {}, {})
-                        storage_authTokenResponse = json.loads(r.content.decode("UTF-8"))
+                        storage_authToken_response = json.loads(r.content.decode("UTF-8"))
 
-                        c42Lib.cp_authorization = "TOKEN %s-%s" % (storage_authTokenResponse['data'][0], storage_authTokenResponse['data'][1])
+                        c42Lib.cp_authorization = "TOKEN %s-%s" % (storage_authToken_response['data'][0], storage_authToken_response['data'][1])
                         self.log(">>> Shared PROVIDER server authorization complete.")
                         # Shared PROVIDER server authorization complete.
                     else:
