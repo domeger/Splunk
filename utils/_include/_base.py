@@ -197,33 +197,47 @@ class C42Script(object):
         for serverGuid, server in storage_servers.items():
             destination = [x for x in all_servers if x['guid'] == serverGuid][0]
             if server['url'] == "%s:%s" % (authority_host, authority_port):
-                self.log(">>> Storage is on master, we don't need to do special authorization.")
-                # Storage is on master, we don't need to do any special authorization.
+                # No special authorization is required for MASTER servers.
+
+                self.log(">>> Private MASTER server authorization complete.")
+                # Private MASTER server authorization complete.
                 break
-            elif destination['type'] == 'CLUSTER':
-                # Storage is on a separate CLUSTER server (servers are owned by the master server).
+            else:
+                # Storage is on a separate server, and we need to authorize against it.
                 r = self.console.executeRequest("get", self.console.cp_api_ping, {}, {})
                 content = r.content.decode('UTF-8')
                 binary = json.loads(content)
                 if binary['data'] and binary['data']['success'] == True:
-                    self.log(">>> Authorizing against storage server for proper connection URL.")
-                    # Authorizing against storage server for proper connection URL.
+                    self.log(">>> Checking connection URL accuracy for storage server.")
+                    # Checking connection URL accuracy for storage server.
                     payload = {
                         "planUid": planUid,
                         "destinationGuid": serverGuid
                     }
                     r = c42Lib.executeRequest("post", c42Lib.cp_api_storageAuthToken, {}, payload)
-                    storage_singleUseTokenResponse = json.loads(r.content.decode("UTF-8"))['data']
-                    (storage_protocol, storage_host, storage_port) = storage_singleUseTokenResponse['serverUrl'].split(':')
+                    storage_singleUseTokenResponse = json.loads(r.content.decode("UTF-8"))
+                    (storage_protocol, storage_host, storage_port) = storage_singleUseTokenResponse['data']['serverUrl'].split(':')
                     storage_host = "%s:%s" % (storage_protocol, storage_host)
+                    storage_singleUseToken = storage_singleUseTokenResponse['data']['loginToken']
 
                     self.console.cp_host = storage_host
                     self.console.cp_port = storage_port
 
+                    if destination['type'] == 'PROVIDER':
+                        self.log(">>> Authorizing for a PROVIDER server (Code42 Hybrid Cloud, etc. not owned by the master server).")
+                        # Authorizing for a PROVIDER server (Code42 Hybrid Cloud, etc. not owned by the master server).
+                        c42Lib.cp_authorization = "LOGIN_TOKEN %s" % storage_singleUseToken
+                        r = c42Lib.executeRequest("post", c42Lib.cp_api_authToken, {}, {})
+                        storage_authTokenResponse = json.loads(r.content.decode("UTF-8"))
+
+                        c42Lib.cp_authorization = "TOKEN %s-%s" % (storage_authTokenResponse['data'][0], storage_authTokenResponse['data'][1])
+                        self.log(">>> Shared PROVIDER server authorization complete.")
+                        # Shared PROVIDER server authorization complete.
+                    else:
+                        self.log(">>> Private STORAGE server authorization complete.")
+                        # Private STORAGE server authorization complete.
+
                     break
-            elif destination['type'] == 'PROVIDER':
-                # Storage is on a PROVIDER server (Code42 Hybrid Cloud, etc. not owned by the master server).
-                raise Exception("Provider storage authorization is currently unimplemented.")
 
         try:
             yield self.console

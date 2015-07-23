@@ -177,6 +177,9 @@ class BackupMetadataDelta(C42Script):
             content = r.content.decode('UTF-8')
             binary = json.loads(content)
 
+        if not 'data' in binary:
+            raise Exception("[%s] - %s" % (binary[0]['name'], binary[0]['description']))
+
         self.log('>> Filtering file versions to specified range.')
         # Filtering file versions to specified range.
         delta = []
