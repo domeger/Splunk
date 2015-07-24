@@ -1,3 +1,10 @@
+# File: splunk-backupDeltaWrapper.py
+# Author: Hank Brekke
+#
+# Uses cursor file ($APP_HOME/events/backupMetadataDelta-lastRun)
+# to call the backupMetadataDelta script and generate backup events.
+#
+
 from _base import SplunkScript
 
 import datetime

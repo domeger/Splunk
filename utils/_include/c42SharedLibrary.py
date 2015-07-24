@@ -1,7 +1,7 @@
 # File: c42SharedLibrary.py
-# Author: AJ LaVenture,
-# Contributions: Paul Hirst, Code 42 Software
-# Last Modified: 02-13-2015
+# Author: AJ LaVenture
+# Author: Paul Hirst
+# Author: Hank Brekke
 #
 # Common and reused functions to allow for rapid script creation
 #

@@ -1,7 +1,6 @@
 # File: _c42_csv.py
 # Author: Nick Wallin
 # Author: Carl Benson
-# Last Modified: 06/17/2015
 #
 # Base class for parsing complex Python objects into a CSV output
 # format.

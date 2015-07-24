@@ -1,6 +1,5 @@
 # File: _base.py
 # Author: Hank Brekke
-# Last Modified: 06/24/2015
 #
 # Base class for performing common API actions, such as querying
 # for devices or parsing arguments.
