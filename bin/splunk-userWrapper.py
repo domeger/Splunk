@@ -1,3 +1,10 @@
+# File: splunk-userWrapper.py
+# Author: Nick Wallin
+#
+# Calls external users script and prints user information
+# to STDOUT for Splunk indexing.
+#
+
 from _base import SplunkScript
 
 import json

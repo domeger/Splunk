@@ -1,3 +1,10 @@
+# File: splunk-configure.py
+# Author: Hank Brekke
+#
+# REST API hanlder for saving a custom conf file for
+# internal Code42 App settings, such as hostname and port.
+#
+
 # http://docs.splunk.com/Documentation/Splunk/6.0/AdvancedDev/SetupExampleCustom
 
 import os

@@ -2,7 +2,6 @@
 
 # File: computers.py
 # Author: Nick Wallin
-# Last Modified: 07/13/2015
 #
 # Usage: computers.py [-s HOSTNAME] [-u USERNAME] [-port PORT] [-p PASSWORD] output
 #

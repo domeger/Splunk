@@ -1,3 +1,10 @@
+# File: _base.py
+# Author: Hank Brekke
+#
+# Base class for performing common Splunk actions, such as calling
+# out to external Python3 or getting a sessionKey.
+#
+
 import os
 import sys
 import subprocess

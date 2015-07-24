@@ -2,7 +2,6 @@
 
 # File: backupMetadataDelta.py
 # Author: Hank Brekke
-# Last Modified: 06/24/2015
 #
 # Calculate a backup selection metadata delta between two dates
 # for a list of computers.
