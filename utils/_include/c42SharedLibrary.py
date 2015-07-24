@@ -41,6 +41,11 @@ class c42Lib(object):
     #cp_password = "admin"
 
     # REST API Calls
+    cp_api_ping = "/api/Ping"
+    cp_api_storage = "/api/Storage"
+    cp_api_destination = "/api/Destination"
+    cp_api_authToken = "/api/AuthToken"
+    cp_api_storageAuthToken = "/api/StorageAuthToken"
     cp_api_userRole = "/api/UserRole"
     cp_api_user = "/api/User"
     cp_api_org = "/api/Org"
@@ -67,6 +72,8 @@ class c42Lib(object):
 
     cp_api_plan = "/api/Plan"
 
+    # Overwrite `cp_authorization` to use something other than HTTP-Basic auth.
+    cp_authorization = None
     cp_logLevel = "INFO"
     cp_logFileName = "c42SharedLibrary.log"
     # This number is set to the maximum limit (current ver. 3.5.4) the REST API allows a resultset size to be.
@@ -82,7 +89,7 @@ class c42Lib(object):
     @staticmethod
     def getRequestHeaders():
         header = {}
-        header["Authorization"] = c42Lib.getAuthHeader(c42Lib.cp_username,c42Lib.cp_password)
+        header["Authorization"] = c42Lib.getAuthHeader(c42Lib.cp_username,c42Lib.cp_password) if not c42Lib.cp_authorization else c42Lib.cp_authorization
         header["Content-Type"] = "application/json"
 
         # print header

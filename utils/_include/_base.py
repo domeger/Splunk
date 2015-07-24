@@ -12,6 +12,7 @@ import contextlib
 import getpass
 import json
 import datetime
+import urllib
 
 from c42SharedLibrary import c42Lib
 import _c42_csv as csv
@@ -153,6 +154,110 @@ class C42Script(object):
 
         self.log('>> Found ' + str(len(computers)) + ' devices matching queries.')
         return computers
+
+    # Cache some information we can reuse throughout several `storage_server` calls.
+    __all_destinations = None
+    __all_servers = None
+    @contextlib.contextmanager
+    def storage_server(self, plan_uid=None, device_guid=None):
+        authority_host = self.console.cp_host
+        authority_port = self.console.cp_port
+
+        if not device_guid and not plan_uid:
+            raise Exception("You need a device_guid or plan_uid to authorize a storage server.")
+
+        if device_guid:
+            self.log('>>> Get backup planUid from deviceGuid %s.' % device_guid)
+            # Get backup planUid from deviceGuid.
+            params = {
+                'sourceComputerGuid': device_guid,
+                'planTypes': 'BACKUP'
+            }
+            r = self.console.executeRequest("get", self.console.cp_api_plan, params, {})
+            backup_plans_response = json.loads(r.content.decode("UTF-8"))
+            backup_plans = backup_plans_response['data'] if 'data' in backup_plans_response else None
+            if backup_plans and len(backup_plans) > 0:
+                plan_uid = backup_plans[0]['planUid']
+
+        if not plan_uid:
+            raise Exception("There are no backup planUid's for this device. Backup likely has not started, or deviceGuid is invalid.")
+
+        self.log('>>> Get storage locations for planUid %s.' % plan_uid)
+        # Get Storage locations for planUid.
+        r = self.console.executeRequest("get", "%s/%s" % (self.console.cp_api_storage, plan_uid), {}, {})
+        storage_destinations_response = json.loads(r.content.decode("UTF-8"))
+        storage_destinations = storage_destinations_response['data'] if 'data' in storage_destinations_response else None
+
+        if not self.__all_destinations:
+            self.log('>>> Get information about all storage destinations.')
+            # Get information about all storage destinations.
+            r = self.console.executeRequest("get", self.console.cp_api_destination, {}, {})
+            all_destinations_response = json.loads(r.content.decode("UTF-8"))
+            self.__all_destinations = all_destinations_response['data']['destinations'] if 'data' in all_destinations_response else None
+        all_destinations = self.__all_destinations
+
+        if not self.__all_servers:
+            self.log('>>> Get information about all storage servers.')
+            # Get information about all storage servers.
+            r = self.console.executeRequest("get", self.console.cp_api_server, {}, {})
+            all_servers_response = json.loads(r.content.decode("UTF-8"))
+            self.__all_servers = all_servers_response['data']['servers'] if 'data' in all_servers_response else None
+        all_servers = self.__all_servers
+
+        # TODO: We need to ping each server and choose the fastest one, rather than going down the list serially.
+        for destination_guid, server in storage_destinations.items():
+            destination = [x for x in all_destinations if x['guid'] == destination_guid][0]
+            server_full = ([x for x in all_servers if x['websiteHost'] == server['url']][:1] or [None])[0]
+            if server_full and server_full['type'] == 'SERVER':
+                # No special authorization is required for MASTER servers.
+
+                self.log(">>> Private MASTER server authorization complete.")
+                # Private MASTER server authorization complete.
+                break
+            else:
+                # Storage is on a separate server, and we need to authorize against it.
+
+                self.log(">>> Checking connection URL accuracy for storage server.")
+                # Checking connection URL accuracy for storage server.
+                payload = {
+                    "planUid": str(plan_uid),
+                    "destinationGuid": destination_guid
+                }
+                r = c42Lib.executeRequest("post", c42Lib.cp_api_storageAuthToken, {}, payload)
+                storage_singleUseToken_response = json.loads(r.content.decode("UTF-8"))
+                if not 'data' in storage_singleUseToken_response:
+                    raise Exception("Failed to get storage auth token from destinationGuid %s - [%s]: %s." % (destination_guid, storage_singleUseToken_response[0]['name'], storage_singleUseToken_response[0]['description']))
+
+                storage_url = urllib.parse.urlparse(storage_singleUseToken_response['data']['serverUrl'])
+                storage_host = "%s://%s" % (storage_url.scheme, storage_url.hostname)
+                storage_port = str(storage_url.port) if storage_url.port else ''
+                storage_singleUseToken = storage_singleUseToken_response['data']['loginToken']
+
+                self.console.cp_host = storage_host
+                self.console.cp_port = storage_port
+
+                if destination['type'] == 'PROVIDER':
+                    self.log(">>> Authorizing for a PROVIDER server (Code42 Hybrid Cloud, etc. not owned by the master server).")
+                    # Authorizing for a PROVIDER server (Code42 Hybrid Cloud, etc. not owned by the master server).
+                    c42Lib.cp_authorization = "LOGIN_TOKEN %s" % storage_singleUseToken
+                    r = c42Lib.executeRequest("post", c42Lib.cp_api_authToken, {}, {})
+                    storage_authToken_response = json.loads(r.content.decode("UTF-8"))
+
+                    c42Lib.cp_authorization = "TOKEN %s-%s" % (storage_authToken_response['data'][0], storage_authToken_response['data'][1])
+                    self.log(">>> Shared PROVIDER server authorization complete.")
+                    # Shared PROVIDER server authorization complete.
+                else:
+                    self.log(">>> Private STORAGE server authorization complete.")
+                    # Private STORAGE server authorization complete.
+
+                break
+
+        try:
+            yield self.console
+        finally:
+            self.console.cp_host = authority_host
+            self.console.cp_port = authority_port
+
 
     # Lifecycle
     def start(self):
