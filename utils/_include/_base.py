@@ -227,7 +227,7 @@ class C42Script(object):
                 r = c42Lib.executeRequest("post", c42Lib.cp_api_storageAuthToken, {}, payload)
                 storage_singleUseToken_response = json.loads(r.content.decode("UTF-8"))
                 if not 'data' in storage_singleUseToken_response:
-                    raise Exception("Failed to get storage auth token from destinationGuid %s." % destination_guid)
+                    raise Exception("Failed to get storage auth token from destinationGuid %s - [%s]: %s." % (destination_guid, storage_singleUseToken_response[0]['name'], storage_singleUseToken_response[0]['description']))
 
                 storage_url = urllib.parse.urlparse(storage_singleUseToken_response['data']['serverUrl'])
                 storage_host = "%s://%s" % (storage_url.scheme, storage_url.hostname)
