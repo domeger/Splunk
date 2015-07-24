@@ -1,5 +1,5 @@
 # File: c42SharedLibrary.py
-# Author: AJ LaVenture,
+# Author: AJ LaVenture
 # Author: Paul Hirst
 # Author: Hank Brekke
 #
