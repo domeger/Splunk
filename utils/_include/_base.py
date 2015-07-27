@@ -108,7 +108,7 @@ class C42Script(object):
             else:
                 queryComputers = binary['data']['computers']
                 if len(queryComputers) == 0:
-                    sys.stderr.write("ERROR: Computer " + query + " could not be found, or is not active.\n")
+                    sys.stderr.write("ERROR: No active computers could be found in this Code42 system.\n")
 
                 for computer in queryComputers:
                     if computer['service'] == type:
