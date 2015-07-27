@@ -16,5 +16,5 @@ List which users are admins, and which are non-admins. Works best as a
 Pie Chart visualization.
 
 ```
-index="code42" sourcetype=c42userevent | search | eval role=if(searchmatch("roles{}.permissions{}.permission=admin"), "Admin", "User") | top limit=2 role
+index="code42" sourcetype=c42userevent earliest=-1d | search | eval role=if(searchmatch("roles{}.permissions{}.permission=admin"), "Admin", "User") | top limit=2 role
 ```
