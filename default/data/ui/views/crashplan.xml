@@ -7,9 +7,8 @@
       <chart>
         <search>
           <query>index="code42" sourcetype="c42userevent" earliest=-1d |
-            search |
-            eval role=if(searchmatch("roles{}.permissions{}.permission=admin"), "Admin", "User") |
-            top limit=2 role</query>
+eval role=if(searchmatch("roles{}.permissions{}.permission=admin"), "Admin", "User") |
+top limit=2 role</query>
         </search>
         <option name="charting.chart">pie</option>
         <option name="charting.axisY2.enabled">false</option>
@@ -39,8 +38,7 @@
       <chart>
         <search>
           <query>index="code42" sourcetype="c42userevent" earliest=-1d |
-            search |
-            chart count(userId) by orgName</query>
+chart count(userId) by orgName</query>
           <earliest>0</earliest>
           <latest></latest>
         </search>
@@ -72,8 +70,7 @@
       <chart>
         <search>
           <query>index="code42" sourcetype="c42computerevent" earliest=-1d |
-            search |
-            top limit=3 backupUsage{}.alertStates{}</query>
+top limit=3 backupUsage{}.alertStates{}</query>
           <earliest></earliest>
           <latest></latest>
         </search>
@@ -108,9 +105,8 @@
       <chart>
         <search>
           <query>index="code42" sourcetype="c42computerevent" earliest=-1d |
-            search |
-            eval OS = osName |
-            top 8 OS</query>
+eval OS = osName |
+top 8 OS</query>
           <earliest></earliest>
           <latest></latest>
         </search>
@@ -142,9 +138,8 @@
       <chart>
         <search>
           <query>index="code42" sourcetype="c42computerevent" earliest=-1d |
-            search |
-            eval OS = osName.":".osVersion |
-            top 10 OS</query>
+eval OS = osName.":".osVersion |
+top 10 OS</query>
           <earliest></earliest>
           <latest></latest>
         </search>
@@ -178,13 +173,12 @@
       <chart>
         <title>Total Active Users by Creation Date</title>
         <search>
-          <query>index="code42" sourcetype="c42userevent" earliest=-1d |
-            search active=true username!=admin |
-            eval date = substr(creationDate,1, 10) |
-            eval create_date = strptime(date, "%Y-%m-%d") |
-            eval UserCreationDate = strftime(create_date,"%m-%d-%Y") |
-            chart count by UserCreationDate |
-            accum count</query>
+          <query>index="code42" sourcetype="c42userevent" earliest=-1d active=true username!=admin |
+eval date = substr(creationDate,1, 10) |
+eval create_date = strptime(date, "%Y-%m-%d") |
+eval UserCreationDate = strftime(create_date,"%m-%d-%Y") |
+chart count by UserCreationDate |
+accum count</query>
           <earliest>0</earliest>
         </search>
         <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
@@ -217,21 +211,20 @@
       <chart>
         <title>Total ArchiveBytes(MB) by TargetComputerName</title>
         <search>
-          <query>index="code42" sourcetype="c42computerevent" earliest=-1d |
-            search targetComputerType!=LOCAL |
-            rename backupUsage{}.archiveGuid as archiveGuid, backupUsage{}.archiveBytes as archiveBytes, backupUsage{}.targetComputerType as targetComputerType, backupUsage{}.targetComputerName as targetComputerName |
-            eval x=mvzip(archiveGuid,mvzip(targetComputerType,mvzip(targetComputerName,archiveBytes,"~~~"),"~~~"),"~~~") |
-            fields guid,x |
-            fields - _raw |
-            rename guid as "Device GUID" |
-            mvexpand x |
-            eval a=split(x,"~~~") |
-            eval archiveGuid=mvindex(a,0) |
-            eval targetComputerType=mvindex(a,1) |
-            eval targetComputerName=mvindex(a,2) |
-            eval archiveBytes=mvindex(a,3) |
-            eval MegaBytes = archiveBytes/1048576 |
-            chart sum(MegaBytes) by targetComputerName</query>
+          <query>index="code42" sourcetype="c42computerevent" earliest=-1d targetComputerType!=LOCAL |
+rename backupUsage{}.archiveGuid as archiveGuid, backupUsage{}.archiveBytes as archiveBytes, backupUsage{}.targetComputerType as targetComputerType, backupUsage{}.targetComputerName as targetComputerName |
+eval x=mvzip(archiveGuid,mvzip(targetComputerType,mvzip(targetComputerName,archiveBytes,"~~~"),"~~~"),"~~~") |
+fields guid,x |
+fields - _raw |
+rename guid as "Device GUID" |
+mvexpand x |
+eval a=split(x,"~~~") |
+eval archiveGuid=mvindex(a,0) |
+eval targetComputerType=mvindex(a,1) |
+eval targetComputerName=mvindex(a,2) |
+eval archiveBytes=mvindex(a,3) |
+eval MegaBytes = archiveBytes/1048576 |
+chart sum(MegaBytes) by targetComputerName</query>
           <earliest></earliest>
           <latest></latest>
         </search>
@@ -260,21 +253,20 @@
       <chart>
         <title>Todo Megabytes by Server Destination</title>
         <search>
-          <query>index="code42" sourcetype="c42computerevent" earliest=-1d |
-            search targetComputerType!=LOCAL |
-            rename backupUsage{}.archiveGuid as archiveGuid, backupUsage{}.todoBytes as todoBytes, backupUsage{}.targetComputerType as targetComputerType, backupUsage{}.targetComputerName as targetComputerName |
-            eval x=mvzip(archiveGuid,mvzip(targetComputerType,mvzip(targetComputerName,todoBytes,"~~~"),"~~~"),"~~~") |
-            fields guid,x |
-            fields - _raw |
-            rename guid as "Device GUID" |
-            mvexpand x |
-            eval a=split(x,"~~~") |
-            eval archiveGuid=mvindex(a,0) |
-            eval targetComputerType=mvindex(a,1) |
-            eval targetComputerName=mvindex(a,2) |
-            eval todoBytes=mvindex(a,3) |
-            eval MegaBytes = todoBytes/1048576 |
-            chart sum(MegaBytes) by targetComputerName</query>
+          <query>index="code42" sourcetype="c42computerevent" earliest=-1d targetComputerType!=LOCAL |
+rename backupUsage{}.archiveGuid as archiveGuid, backupUsage{}.todoBytes as todoBytes, backupUsage{}.targetComputerType as targetComputerType, backupUsage{}.targetComputerName as targetComputerName |
+eval x=mvzip(archiveGuid,mvzip(targetComputerType,mvzip(targetComputerName,todoBytes,"~~~"),"~~~"),"~~~") |
+fields guid,x |
+fields - _raw |
+rename guid as "Device GUID" |
+mvexpand x |
+eval a=split(x,"~~~") |
+eval archiveGuid=mvindex(a,0) |
+eval targetComputerType=mvindex(a,1) |
+eval targetComputerName=mvindex(a,2) |
+eval todoBytes=mvindex(a,3) |
+eval MegaBytes = todoBytes/1048576 |
+chart sum(MegaBytes) by targetComputerName</query>
           <earliest></earliest>
           <latest></latest>
         </search>
@@ -304,20 +296,19 @@
         <title>Total Archive Megabytes by TargetType</title>
         <search>
           <query>index="code42" sourcetype="c42computerevent" earliest=-1d |
-            search |
-            rename backupUsage{}.archiveGuid as archiveGuid, backupUsage{}.archiveBytes as archiveBytes, backupUsage{}.targetComputerType as targetComputerType, backupUsage{}.targetComputerName as targetComputerName |
-            eval x=mvzip(archiveGuid,mvzip(targetComputerType,mvzip(targetComputerName,archiveBytes,"~~~"),"~~~"),"~~~") |
-            fields guid,x |
-            fields - _raw |
-            rename guid as "Device GUID" |
-            mvexpand x |
-            eval a=split(x,"~~~") |
-            eval archiveGuid=mvindex(a,0) |
-            eval targetComputerType=mvindex(a,1) |
-            eval targetComputerName=mvindex(a,2) |
-            eval archiveBytes=mvindex(a,3) |
-            eval MegaBytes = archiveBytes/1048576 |
-            chart sum(MegaBytes) by targetComputerType</query>
+rename backupUsage{}.archiveGuid as archiveGuid, backupUsage{}.archiveBytes as archiveBytes, backupUsage{}.targetComputerType as targetComputerType, backupUsage{}.targetComputerName as targetComputerName |
+eval x=mvzip(archiveGuid,mvzip(targetComputerType,mvzip(targetComputerName,archiveBytes,"~~~"),"~~~"),"~~~") |
+fields guid,x |
+fields - _raw |
+rename guid as "Device GUID" |
+mvexpand x |
+eval a=split(x,"~~~") |
+eval archiveGuid=mvindex(a,0) |
+eval targetComputerType=mvindex(a,1) |
+eval targetComputerName=mvindex(a,2) |
+eval archiveBytes=mvindex(a,3) |
+eval MegaBytes = archiveBytes/1048576 |
+chart sum(MegaBytes) by targetComputerType</query>
           <earliest></earliest>
           <latest></latest>
         </search>
