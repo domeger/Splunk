@@ -48,11 +48,15 @@ class BackupDeltaWrapper(SplunkScript):
         if self.config['devices']:
             args.extend(['-d', self.config['devices']])
 
-        self.python(args, write_stdout=True)
+        try:
+            self.python(args, write_stdout=True)
 
-        with open(cursor, 'w') as f:
-            # Write the ISO cursor of the upper range (lower range for next run).
-            f.write(now.isoformat())
+            # Only update the cursor file if the script exited with 0.
+            with open(cursor, 'w') as f:
+                # Write the ISO cursor of the upper range (lower range for next run).
+                f.write(now.isoformat())
+        except Exception as e:
+            sys.stderr.write("ERROR: %s\n" % str(e))
 
 script = BackupDeltaWrapper()
 script.run()

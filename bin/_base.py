@@ -178,6 +178,11 @@ class SplunkScript(object):
         stdout_thread.join()
         stderr_thread.join()
 
+        # Make sure the `returncode` is set, and the script is finished.
+        process.wait()
+        if process.returncode != 0:
+            raise Exception("Non-zero exit code when running external script.")
+
     def main(self):
         return
 
