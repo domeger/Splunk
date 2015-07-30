@@ -211,7 +211,7 @@ accum count</query>
       <chart>
         <title>Total ArchiveBytes(MB) by TargetComputerName</title>
         <search>
-          <query>index="code42" sourcetype="c42computerevent" earliest=-1d targetComputerType!=LOCAL |
+          <query>index="code42" sourcetype="c42computerevent" earliest=-1d backupUsage{}.targetComputerType!="LOCAL" |
 rename backupUsage{}.archiveGuid as archiveGuid, backupUsage{}.archiveBytes as archiveBytes, backupUsage{}.targetComputerType as targetComputerType, backupUsage{}.targetComputerName as targetComputerName |
 eval x=mvzip(archiveGuid,mvzip(targetComputerType,mvzip(targetComputerName,archiveBytes,"~~~"),"~~~"),"~~~") |
 fields guid,x |
@@ -253,7 +253,7 @@ chart sum(MegaBytes) by targetComputerName</query>
       <chart>
         <title>Todo Megabytes by Server Destination</title>
         <search>
-          <query>index="code42" sourcetype="c42computerevent" earliest=-1d targetComputerType!=LOCAL |
+          <query>index="code42" sourcetype="c42computerevent" earliest=-1d backupUsage{}.targetComputerType!="LOCAL" |
 rename backupUsage{}.archiveGuid as archiveGuid, backupUsage{}.todoBytes as todoBytes, backupUsage{}.targetComputerType as targetComputerType, backupUsage{}.targetComputerName as targetComputerName |
 eval x=mvzip(archiveGuid,mvzip(targetComputerType,mvzip(targetComputerName,todoBytes,"~~~"),"~~~"),"~~~") |
 fields guid,x |
