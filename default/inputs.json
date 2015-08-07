@@ -12,17 +12,6 @@
   },
   {
     "protocol": "script",
-    "path": [ ".", "bin", "splunk-backupDeltaWrapper.py" ],
-    "settings": {
-      "interval": "10800",
-      "index": "code42",
-      "sourcetype": "c42backupevent",
-      "passAuth": "splunk-system-user",
-      "disabled": "0"
-    }
-  },
-  {
-    "protocol": "script",
     "path": [ ".", "bin", "splunk-computerWrapper.py" ],
     "settings": {
       "interval": "86400",

@@ -26,7 +26,7 @@ class BackupMetadataDelta(C42Script):
     def setup_parser(self, parser):
         parser.add_argument('date1', help='Date for the base during delta calculation (2015-06-24)')
         parser.add_argument('date2', help='Date for the opposing delta calculation (2015-06-24)')
-        parser.add_argument('-d', '--devices', dest='devices', help='Comma separated list of computer name or GUID, and/or organization name (prefixed with "org:")')
+        parser.add_argument('-d', '--device', dest='device', help='A computer name or GUID for delta calculation.')
         parser.add_argument('-o', '--output', dest='output', help='An optional output file as a CSV document, "csv" or "json" for STDOUT formatting.')
 
         if os.name != 'nt':
@@ -41,8 +41,9 @@ class BackupMetadataDelta(C42Script):
     def start(self):
         super(BackupMetadataDelta, self).start()
 
-        if self.args.devices:
-            self.args.devices = self.args.devices.split(',')
+        self.args.devices = None
+        if self.args.device:
+            self.args.devices = self.args.device.split(',')
 
         self.args.date1 = parse(self.args.date1)
         self.args.date2 = parse(self.args.date2)
@@ -225,6 +226,15 @@ class BackupMetadataDelta(C42Script):
 
     def main(self):
         deviceGUIDs = self.search_devices(self.args.devices)
+
+        if len(deviceGUIDs) > 1:
+            sys.stdout.write("\n")
+            sys.stderr.write("**************************************************************************************\n")
+            sys.stderr.write("*** THIS SCRIPT DOES NOT PERFORM AT SCALE, AND CAN ONLY BE RUN FOR A SINGLE DEVICE ***\n")
+            sys.stderr.write("*** PLEASE ADD `-d deviceGuid` TO THE CLI ARGUMENTS & TRY AGAIN                    ***\n")
+            sys.stderr.write("**************************************************************************************\n")
+            sys.stdout.write("\n")
+            sys.exit(1)
 
         # Open the file & overwrite any previous content with empty (clean output).
         if self.args.output and os.path.exists(self.args.output):

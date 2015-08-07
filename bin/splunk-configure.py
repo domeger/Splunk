@@ -16,7 +16,7 @@ import splunk.entity as en
 class ConfigApp(admin.MConfigHandler):
   def setup(self):
     if self.requestedAction == admin.ACTION_EDIT:
-      args = ['hostname', 'port', 'devices']
+      args = ['hostname', 'port']
       for arg in args:
         self.supportedArgs.addOptArg(arg)
 
@@ -69,10 +69,6 @@ class ConfigApp(admin.MConfigHandler):
           self.callerArgs.data['hostname'][0] = "https://%s" % hostname
         else:
           self.callerArgs.data['hostname'][0] = "http://%s" % hostname
-    elif name == 'script':
-      # /code42/config/script [script stanza]
-
-      self.itemDefault('devices', '')
 
     self.writeConf('c42config', name, self.callerArgs.data)
     self.writeInputs()
