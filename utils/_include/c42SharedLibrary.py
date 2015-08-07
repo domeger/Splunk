@@ -77,7 +77,7 @@ class c42Lib(object):
     cp_logLevel = "INFO"
     cp_logFileName = "c42SharedLibrary.log"
     # This number is set to the maximum limit (current ver. 3.5.4) the REST API allows a resultset size to be.
-    MAX_PAGE_NUM = 250
+    MAX_PAGE_NUM = 9001
 
 
     #
@@ -1621,4 +1621,3 @@ class c42Lib(object):
 # class OrgClass(object)
 
 # class DeviceClass(object)
-
