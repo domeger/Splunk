@@ -13,14 +13,6 @@
             <type>text</type>
         </input>
     </block>
-    <block title="Event Filter" endpoint="code42/config" entity="script">
-        <text>Filter imported objects to only items inside the defined list of devices or organizations.</text>
-        <text>Device queries should be a comma separated list of deviceGUIDs, device names, or organization names (prefixed with "org:" each time). Blank value will import all objects.</text>
-        <input field="devices">
-            <label>Event Filter Query</label>
-            <type>text</type>
-        </input>
-    </block>
     <block title="Code42 Console User" endpoint="storage/passwords" entity="_new">
         <input field="name">
             <label>Console Username</label>
