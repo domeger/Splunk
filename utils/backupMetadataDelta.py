@@ -108,7 +108,7 @@ class BackupMetadataDelta(C42Script):
 
     def __str(self, obj):
         # http://code.activestate.com/recipes/466341-guaranteed-conversion-to-unicode-or-byte-string/
-        return str(obj).encode('ascii', 'ignore').decode('unicode_escape')
+        return str(obj).replace("\\", "\\\\").encode('ascii', 'ignore').decode('unicode_escape')
 
     def __output(self, out, event):
         if self.args.format == 'json':
