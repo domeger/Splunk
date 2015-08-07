@@ -28,18 +28,25 @@ class C42Computers(C42Script):
 
     def main(self):
         timestamp = datetime.datetime.now().isoformat()
-        computers = self.console.getAllDevices()
         output_file = self.args.output
         with open(output_file, "w") as f:
-            json_array = []
-            for computer in computers:
-                try:
+            f.write("[")
+            params = {}
+            current_page = 1
+            paged_list = True
+            first_item = True
+            while paged_list:
+                paged_list = self.console.getDevices(current_page)
+                for computer in paged_list:
                     computer['timestamp'] = timestamp
                     computer['schema_version'] = 1
-                    json_array.append(computer)
-                except KeyError:
-                    continue
-            json.dump(json_array, f)
+                    if not first_item:
+                        f.write(",")
+                    else:
+                        first_item = False
+                    json.dump(computer, f)
+                current_page += 1
+            f.write("]")
 
 script = C42Computers()
 script.run()
