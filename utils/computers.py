@@ -31,7 +31,6 @@ class C42Computers(C42Script):
         output_file = self.args.output
         with open(output_file, "w") as f:
             f.write("[")
-            params = {}
             current_page = 1
             paged_list = True
             first_item = True

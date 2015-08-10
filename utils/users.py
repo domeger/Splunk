@@ -15,74 +15,43 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '_include'))
 from _base import C42Script
 
 class C42Users(C42Script):
-    def __getActiveUsersPaged(self,pgNum,params = {}):
-        params['pgNum'] = str(pgNum)
-        params['pgSize'] = str(self.console.MAX_PAGE_NUM)
-        params['active'] = True
-
-        payload = {}
-
-        r = self.console.executeRequest("get", self.console.cp_api_user, params, payload)
-
-        content = r.content.decode('UTF-8')
-        binary = json.loads(content)
-
-        users = binary['data']['users'] if 'data' in binary and 'users' in binary['data'] else None
-        return users
-
-
-    def __getUsers(self):
-        currentPage = 1
-        keepLooping = True
-        fullList = []
-        while keepLooping:
-            pagedList = self.__getActiveUsersPaged(currentPage)
-            if pagedList:
-                fullList.extend(pagedList)
-            else:
-                keepLooping = False
-            currentPage += 1
-        return fullList
-
-
     def description(self):
         return "Export Code42 user information."
+
 
     def setup_parser(self, parser):
         parser.add_argument("output", help="An output file with data in JSON format.")
         super(C42Users, self).setup_parser(parser)
 
+
     def outline(self):
         self.log("Exporting User information to " + self.args.output)
         super(C42Users, self).outline()
 
-    def __roles_for_user(self, user_id):
-        params = {}
-        payload = {}
-        r = self.console.executeRequest("get", self.console.cp_api_userRole + "/" + str(user_id), params, payload)
-        content = r.content.decode("UTF-8")
-        binary = json.loads(content)
-        roles = binary['data']
-        return roles
 
     def main(self):
-        users = self.__getUsers()
+        timestamp = datetime.datetime.now().isoformat()
         output_file = self.args.output
         with open(output_file, "w") as f:
-            timestamp = datetime.datetime.now().isoformat()
-            json_array = []
-            for user in users:
-                try:
-                    user_id = user["userId"]
-                    user_uid = user["userUid"]
-                    roles_json_string = self.__roles_for_user(user_id)
-                    user["roles"] = roles_json_string
-                    user["timestamp"] = timestamp
-                    user["schema_version"] = 1
-                    json_array.append(user)
-                except KeyError:
-                    continue
-            json.dump(json_array, f)
+            f.write("[")
+            params = {}
+            params['active'] = 'true'
+            params['incRoles'] = 'true'
+            current_page = 1
+            paged_list = True
+            first_item = True
+            while paged_list:
+                paged_list = self.console.getUsersPaged(current_page, params)
+                for user in paged_list:
+                    user['timestamp'] = timestamp
+                    user['schema_version'] = 1
+                    if not first_item:
+                        f.write(",")
+                    else:
+                        first_item = False
+                    json.dump(user, f)
+                current_page += 1
+            f.write("]")
 
 
 script = C42Users()
