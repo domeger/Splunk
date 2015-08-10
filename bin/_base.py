@@ -76,7 +76,6 @@ class SplunkScript(object):
                 # list all credentials
                 passwordEntities = entity.getEntities(['admin', 'passwords'], namespace='code42', owner='nobody', sessionKey=sessionKey)
                 configConsoleEntities = entity.getEntities(['code42', 'config', 'console'], namespace='code42', owner='nobody', sessionKey=sessionKey)
-                configScriptEntities = entity.getEntities(['code42', 'config', 'script'], namespace='code42', owner='nobody', sessionKey=sessionKey)
             except Exception as e:
                 raise Exception("Could not get code42 credentials from splunk. Error: %s" % (str(e)))
 
@@ -94,17 +93,10 @@ class SplunkScript(object):
                 if 'port' in c and c['port']:
                     config['port'] = c['port']
 
-            for i, c in configScriptEntities.items():
-                if 'devices' in c and c['devices'] != None and len(c['devices']) > 0:
-                    config['devices'] = c['devices']
-                else:
-                    config['devices'] = None
-
             if ('username' not in config or
                 'password' not in config or
                 'hostname' not in config or
-                'port' not in config or
-                'devices' not in config):
+                'port' not in config):
 
                 # sleep a second, try again
                 time.sleep(1)
