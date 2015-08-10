@@ -33,7 +33,7 @@ class C42Users(C42Script):
         timestamp = datetime.datetime.now().isoformat()
         output_file = self.args.output
         with open(output_file, "w") as f:
-            f.write("[")
+            f.write("[\n")
             params = {}
             params['active'] = 'true'
             params['incRoles'] = 'true'
@@ -46,10 +46,11 @@ class C42Users(C42Script):
                     user['timestamp'] = timestamp
                     user['schema_version'] = 1
                     if not first_item:
-                        f.write(",")
+                        f.write(",\n")
                     else:
                         first_item = False
                     json.dump(user, f)
+                    f.write("\n")
                 current_page += 1
             f.write("]")
 
