@@ -35,10 +35,7 @@ class UserWrapper(SplunkScript):
             data_file.readline()
             for line in data_file:
                 if line.strip() not in [',',']']:
-                    try:
-                        sys.stdout.write(json.dumps(json.loads(line)) + "\n")
-                    except ValueError:
-                        pass
+                    sys.stdout.write(json.dumps(json.loads(line)) + "\n")
 
         os.remove(tmpEventFile)
 
