@@ -7,7 +7,7 @@
       <chart>
         <search>
           <query>index="code42" sourcetype="c42userevent" earliest=-1d |
-eval role=if(searchmatch("roles{}.permissions{}.permission=admin"), "Admin", "User") |
+eval role=if(searchmatch("roles{}=SYSADMIN"), "Admin", "User") |
 top limit=2 role</query>
         </search>
         <option name="charting.chart">pie</option>
