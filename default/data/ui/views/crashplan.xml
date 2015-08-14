@@ -7,6 +7,7 @@
       <chart>
         <search>
           <query>index="code42" sourcetype="c42userevent" earliest=-1d |
+dedup userUid sortby -modificationDate |
 eval role=if(searchmatch("roles{}=SYSADMIN"), "Admin", "User") |
 top limit=2 role</query>
         </search>
@@ -38,6 +39,7 @@ top limit=2 role</query>
       <chart>
         <search>
           <query>index="code42" sourcetype="c42userevent" earliest=-1d |
+dedup userUid sortby -modificationDate |
 chart count(userId) by orgName</query>
           <earliest>0</earliest>
           <latest></latest>
@@ -70,6 +72,7 @@ chart count(userId) by orgName</query>
       <chart>
         <search>
           <query>index="code42" sourcetype="c42computerevent" earliest=-1d |
+dedup guid sortby -modificationDate |
 top limit=3 backupUsage{}.alertStates{}</query>
           <earliest></earliest>
           <latest></latest>
@@ -105,6 +108,7 @@ top limit=3 backupUsage{}.alertStates{}</query>
       <chart>
         <search>
           <query>index="code42" sourcetype="c42computerevent" earliest=-1d |
+dedup guid sortby -modificationDate |
 eval OS = osName |
 top 8 OS</query>
           <earliest></earliest>
@@ -138,6 +142,7 @@ top 8 OS</query>
       <chart>
         <search>
           <query>index="code42" sourcetype="c42computerevent" earliest=-1d |
+dedup guid sortby -modificationDate |
 eval OS = osName.":".osVersion |
 top 10 OS</query>
           <earliest></earliest>
@@ -174,6 +179,7 @@ top 10 OS</query>
         <title>Total Active Users by Creation Date</title>
         <search>
           <query>index="code42" sourcetype="c42userevent" earliest=-1d active=true username!=admin |
+dedup userUid sortby -modificationDate |
 eval date = substr(creationDate,1, 10) |
 eval create_date = strptime(date, "%Y-%m-%d") |
 eval UserCreationDate = strftime(create_date,"%m-%d-%Y") |
@@ -212,6 +218,7 @@ accum count</query>
         <title>Total ArchiveBytes(MB) by TargetComputerName</title>
         <search>
           <query>index="code42" sourcetype="c42computerevent" earliest=-1d backupUsage{}.targetComputerType!="LOCAL" |
+dedup guid sortby -modificationDate |
 rename backupUsage{}.archiveGuid as archiveGuid, backupUsage{}.archiveBytes as archiveBytes, backupUsage{}.targetComputerType as targetComputerType, backupUsage{}.targetComputerName as targetComputerName |
 eval x=mvzip(archiveGuid,mvzip(targetComputerType,mvzip(targetComputerName,archiveBytes,"~~~"),"~~~"),"~~~") |
 fields guid,x |
@@ -254,6 +261,7 @@ chart sum(MegaBytes) by targetComputerName</query>
         <title>Todo Megabytes by Server Destination</title>
         <search>
           <query>index="code42" sourcetype="c42computerevent" earliest=-1d backupUsage{}.targetComputerType!="LOCAL" |
+dedup guid sortby -modificationDate |
 rename backupUsage{}.archiveGuid as archiveGuid, backupUsage{}.todoBytes as todoBytes, backupUsage{}.targetComputerType as targetComputerType, backupUsage{}.targetComputerName as targetComputerName |
 eval x=mvzip(archiveGuid,mvzip(targetComputerType,mvzip(targetComputerName,todoBytes,"~~~"),"~~~"),"~~~") |
 fields guid,x |
@@ -296,6 +304,7 @@ chart sum(MegaBytes) by targetComputerName</query>
         <title>Total Archive Megabytes by TargetType</title>
         <search>
           <query>index="code42" sourcetype="c42computerevent" earliest=-1d |
+dedup guid sortby -modificationDate |
 rename backupUsage{}.archiveGuid as archiveGuid, backupUsage{}.archiveBytes as archiveBytes, backupUsage{}.targetComputerType as targetComputerType, backupUsage{}.targetComputerName as targetComputerName |
 eval x=mvzip(archiveGuid,mvzip(targetComputerType,mvzip(targetComputerName,archiveBytes,"~~~"),"~~~"),"~~~") |
 fields guid,x |
