@@ -1,17 +1,18 @@
-# Code42 Splunk App
+# Code42 App for Splunk
 
 This Splunk App connects to a Code42 Enterprise server for importing and syncing
 event data between Code42 and Splunk.
 
 ## Getting Started
 
-You'll need a Code42 Server when you go through the setup process during the
-install for this app. Splunk will automatically guide you through the setup
-process.
+An installed and configured Code42 Enterprise Server is required. You cannot complete the 
+Code42 App for Splunk setup process without an installed Code42 Enterprise server.
+Splunk guides you through the setup process, but you may also read the Code42 App for Splunk
+installation article at the [Code42 Support][support] site.
 
 ### Install Prerequisites
 
-The Python scripts embedded inside this app have several required dependencies
+The Python scripts embedded in this app have several dependencies
 that need to be installed for events to import successfully.
 
 1. Check your Splunk server's system Python path.
@@ -49,7 +50,7 @@ $ git archive \
 $ mv code42.tar.gz code42.spl
 ```
 
-After exporting the Splunk Package `.spl`, you can then install the package
+After exporting the Splunk Package `.spl`, you can install the package
 using Splunk's built-in Apps page.
 
 1. Select "Manage Apps" from the Apps dropdown.
@@ -68,9 +69,9 @@ $ cd $SPLUNK_HOME/etc/apps
 $ git clone [clone-url] code42
 ```
 
-Just make sure to restart Splunk after cloning the repository. You'll need to
-open the Setup page from the Manage Apps page to configure your Code42 Server
-info. From the Manage Apps page you can also enable and disable the Code42 app.
+Restart Splunk after cloning the repository, then open the Setup page
+from the Manage Apps page to configure your Code42 Server info.
+From the Manage Apps page you can also enable and disable the Code42 app.
 
 ### Testing Installation
 
@@ -98,7 +99,7 @@ Data is automatically imported to a custom `code42` index once the app is
 enabled. The different structured data formats described below are automatically
 imported to the Code42 index using cron scripts and file monitors.
 
-The Code42 App does contain some pre-built dashboards, but you are able to write
+The Code42 App does contain some pre-built dashboards, but you can also write
 your own queries using Splunk's *Search & Reporting* app. You can see example
 queries in the [EXAMPLES.md][examples] file.
 
@@ -111,6 +112,7 @@ and should have it's own `sourcetype` namespace.
 <!--
 ## URL References
 -->
+[support]: https://support.code42.com
 [pip]: https://pip.pypa.io/en/latest/index.html
 [examples]: https://stash.corp.code42.com/projects/spyd/repos/splunk/browse/EXAMPLES.md
 [caveats]: https://stash.corp.code42.com/projects/spyd/repos/splunk/browse/CAVEATS.md
