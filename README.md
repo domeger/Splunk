@@ -1,14 +1,14 @@
 # Code42 App for Splunk
 
-This Splunk App connects to a Code42 Enterprise server for importing and syncing
+This Splunk App connects to a Code42 server for importing and syncing
 event data between Code42 and Splunk.
 
 ## Getting Started
 
-An installed and configured Code42 Enterprise Server is required. You cannot complete the 
-Code42 App for Splunk setup process without an installed Code42 Enterprise server.
+You must have an installed and configured Code42 server to complete the
+Code42 app for Splunk setup process.
 Splunk guides you through the setup process, but you may also read the Code42 App for Splunk
-installation article at the [Code42 Support][support] site.
+installation article at the [Code42 Support site][support].
 
 ### Install Prerequisites
 
@@ -17,8 +17,8 @@ that need to be installed for events to import successfully.
 
 1. Check your Splunk server's system Python path.
     - For stability, you should ensure that `python3` is installed on your
-    system&mdash;this will be used automatically by the Code42 app. The embedded
-    Python included with Splunk does not support all the requirements of this app.
+    system&mdash;this will be used automatically by the Code42 app for Splunk. The
+    embedded Python included with Splunk does not support all the requirements of this app.
     - System `python` will be used if `python3` is not found in your `$PATH`, but
     if Python is not located at `/usr/bin/python` you will need to update the
     contents of `bin/_base.py` with the correct path.
@@ -70,8 +70,8 @@ $ git clone [clone-url] code42
 ```
 
 Restart Splunk after cloning the repository, then open the Setup page
-from the Manage Apps page to configure your Code42 Server info.
-From the Manage Apps page you can also enable and disable the Code42 app.
+from the Manage Apps page to configure your Code42 server info.
+From the Manage Apps page you can also enable and disable the Code42 app for Splunk.
 
 ### Testing Installation
 
@@ -90,8 +90,8 @@ The script should run successfully.
 
 ## Notes & Caveats
 
-See [CAVEATS.md][caveats] for information about a few caveats in the Splunk
-app, like changing your API User Credentials.
+See [CAVEATS.md][caveats] for information about a few caveats in the
+Code42 app for Splunk, like changing your API User Credentials.
 
 ## Data Imported
 
@@ -99,20 +99,20 @@ Data is automatically imported to a custom `code42` index once the app is
 enabled. The different structured data formats described below are automatically
 imported to the Code42 index using cron scripts and file monitors.
 
-The Code42 App does contain some pre-built dashboards, but you can also write
+The Code42 app for Splunk does contain some pre-built dashboards, but you can also write
 your own queries using Splunk's *Search & Reporting* app. You can see example
 queries in the [EXAMPLES.md][examples] file.
 
 ## Contributing
 
 Contributions are welcome for new and updated data types imported to Splunk
-using the Code42 Splunk app. Each event should be saved to the `code42` index,
+using the Code42 app for Splunk. Each event should be saved to the `code42` index,
 and should have it's own `sourcetype` namespace.
 
 <!--
 ## URL References
 -->
-[support]: https://support.code42.com
+[support]: https://code42.com/r/support/splunk-app
 [pip]: https://pip.pypa.io/en/latest/index.html
-[examples]: https://stash.corp.code42.com/projects/spyd/repos/splunk/browse/EXAMPLES.md
-[caveats]: https://stash.corp.code42.com/projects/spyd/repos/splunk/browse/CAVEATS.md
+[examples]: EXAMPLES.md
+[caveats]: CAVEATS.md
