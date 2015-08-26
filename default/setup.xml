@@ -4,23 +4,23 @@
     </block>
     <block title="Code42 Console Server" endpoint="code42/config" entity="console">
         <input field="hostname">
-            <label>Console Hostname</label>
+            <label>Console hostname</label>
             <type>text</type>
         </input>
 
         <input field="port">
-            <label>Console Port</label>
+            <label>Console port</label>
             <type>text</type>
         </input>
     </block>
     <block title="Code42 Console User" endpoint="storage/passwords" entity="_new">
         <input field="name">
-            <label>Console Username</label>
+            <label>Console username</label>
             <type>text</type>
         </input>
 
         <input field="password">
-            <label>Console Password</label>
+            <label>Console password</label>
             <type>password</type>
         </input>
     </block>
