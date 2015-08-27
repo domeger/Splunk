@@ -76,7 +76,7 @@ class c42Lib(object):
     cp_authorization = None
     cp_logLevel = "INFO"
     cp_logFileName = "c42SharedLibrary.log"
-    MAX_PAGE_NUM = 9001
+    MAX_PAGE_NUM = 250
 
 
     #
