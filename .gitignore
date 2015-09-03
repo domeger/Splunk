@@ -1,6 +1,8 @@
 # Code42 Splunk App
 events
 log
+lookups
+code42.tar.gz
 
 # OSX noise
 .DS_Store
@@ -12,9 +14,19 @@ log
 .project
 .pydevproject
 
+# PyCharm project files
+.idea/
+
+# nosetest results
+nosetests.xml
+
+# hypothesis
+.hypothesis
+
 # Local stuff
 local/
 local.meta
 
 # Git repositories folder
 git-repositories/
+d3_report_output
