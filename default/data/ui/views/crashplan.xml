@@ -217,7 +217,7 @@ accum count</query>
       <chart>
         <title>Total ArchiveBytes(MB) by TargetComputerName</title>
         <search>
-          <query>index="code42" sourcetype="c42computerevent" earliest=-1d backupUsage{}.targetComputerType!="LOCAL" |
+          <query>index="code42" sourcetype="c42computerevent" earliest=-1d |
 dedup guid sortby -modificationDate |
 rename backupUsage{}.archiveGuid as archiveGuid, backupUsage{}.archiveBytes as archiveBytes, backupUsage{}.targetComputerType as targetComputerType, backupUsage{}.targetComputerName as targetComputerName |
 eval x=mvzip(archiveGuid,mvzip(targetComputerType,mvzip(targetComputerName,archiveBytes,"~~~"),"~~~"),"~~~") |
@@ -231,6 +231,7 @@ eval targetComputerType=mvindex(a,1) |
 eval targetComputerName=mvindex(a,2) |
 eval archiveBytes=mvindex(a,3) |
 eval MegaBytes = archiveBytes/1048576 |
+search targetComputerType !="LOCAL" |
 chart sum(MegaBytes) by targetComputerName</query>
           <earliest></earliest>
           <latest></latest>
@@ -260,7 +261,7 @@ chart sum(MegaBytes) by targetComputerName</query>
       <chart>
         <title>Todo Megabytes by Server Destination</title>
         <search>
-          <query>index="code42" sourcetype="c42computerevent" earliest=-1d backupUsage{}.targetComputerType!="LOCAL" |
+          <query>index="code42" sourcetype="c42computerevent" earliest=-1d |
 dedup guid sortby -modificationDate |
 rename backupUsage{}.archiveGuid as archiveGuid, backupUsage{}.todoBytes as todoBytes, backupUsage{}.targetComputerType as targetComputerType, backupUsage{}.targetComputerName as targetComputerName |
 eval x=mvzip(archiveGuid,mvzip(targetComputerType,mvzip(targetComputerName,todoBytes,"~~~"),"~~~"),"~~~") |
@@ -274,7 +275,53 @@ eval targetComputerType=mvindex(a,1) |
 eval targetComputerName=mvindex(a,2) |
 eval todoBytes=mvindex(a,3) |
 eval MegaBytes = todoBytes/1048576 |
+search targetComputerType !="LOCAL" |
 chart sum(MegaBytes) by targetComputerName</query>
+          <earliest></earliest>
+          <latest></latest>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">bar</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+      </chart>
+      <chart>
+        <title>Todo Megabytes by Server Organization</title>
+        <search>
+          <query>index="code42" sourcetype="c42computerevent" earliest=-1d |
+dedup guid sortby -modificationDate |
+join userUid [search index=code42 sourcetype=c42userevent earliest=-1d | dedup userUid sortby -modificationDate] |
+rename backupUsage{}.archiveGuid as archiveGuid, backupUsage{}.todoBytes as todoBytes, backupUsage{}.targetComputerType as targetComputerType, backupUsage{}.targetComputerName as targetComputerName, orgName as "Org Name" |
+eval x=mvzip(archiveGuid,mvzip(targetComputerType,mvzip(targetComputerName,todoBytes,"~~~"),"~~~"),"~~~") |
+fields guid,"Org Name",x |
+fields - _raw |
+rename guid as "Device GUID" |
+mvexpand x |
+eval a=split(x,"~~~") |
+eval archiveGuid=mvindex(a,0) |
+eval targetComputerType=mvindex(a,1) |
+eval targetComputerName=mvindex(a,2) |
+eval todoBytes=mvindex(a,3) |
+eval MegaBytes = todoBytes/1048576 |
+search targetComputerType !="LOCAL" |
+chart sum(MegaBytes) by "Org Name"</query>
           <earliest></earliest>
           <latest></latest>
         </search>
