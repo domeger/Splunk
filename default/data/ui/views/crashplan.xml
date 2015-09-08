@@ -176,7 +176,7 @@ top 10 OS</query>
     <panel>
       <title>User Adoption</title>
       <chart>
-        <title>Total Active Users by Creation Date</title>
+        <title>Total Users Added Over Time</title>
         <search>
           <query>index="code42" sourcetype="c42userevent" earliest=-1d active=true username!=admin |
 dedup userUid sortby -modificationDate |
