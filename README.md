@@ -40,7 +40,7 @@ First, you'll need to export a Splunk Package by cloning the repo and exporting
 the contents.
 
 ```
-$ git clone [clone-url] Code42-Splunk
+$ git clone https://github.com/code42/Splunk.git Code42-Splunk
 $ cd Code42-Splunk
 $ git archive \
     --format=tar.gz \
@@ -66,7 +66,7 @@ keep the scripts updated.
 ```
 $ export SPLUNK_HOME="/path/to/Splunk"
 $ cd $SPLUNK_HOME/etc/apps
-$ git clone [clone-url] code42
+$ git clone https://github.com/code42/Splunk.git code42
 ```
 
 Restart Splunk after cloning the repository, then open the Setup page
