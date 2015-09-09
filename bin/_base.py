@@ -81,7 +81,13 @@ class SplunkScript(object):
 
             config = {}
 
-            for i, c in passwordEntities.items():
+            # The permission "Sharing for config file-only objects" adds other app's
+            # credentials to this list. We need to make sure we filter down to only
+            # the username/password stored by the Code42 app.
+            #
+            # https://github.com/code42/Splunk/issues/2
+            passwords = (x for x in passwordEntities.values() if x['eai:acl']['app'] == 'code42')
+            for c in passwords:
                 if 'username' in c and c['username']:
                     config['username'] = c['username']
                 if 'clear_password' in c and c['clear_password']:
