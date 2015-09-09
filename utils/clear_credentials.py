@@ -38,15 +38,16 @@ passwordEntities = entity.getEntities(['admin', 'passwords'], namespace='code42'
 # the username/password stored by the Code42 app.
 #
 # https://github.com/code42/Splunk/issues/2
-passwords = [(i, x) for i, x in passwordEntities.items() if x['eai:acl']['app'] == 'code42']
+passwords = {i:x for i, x in passwordEntities.items() if 'eai:acl' in x and 'app' in x['eai:acl'] \
+                                                         and x['eai:acl']['app'] == 'code42'}
 
 if len(passwords) == 0:
     print('All Code42 credentials have already been cleared.')
     print('')
     sys.exit(0)
 
-for name, credential in passwords:
-    print("Found credentials username %s." % credential['username'])
+for name, credential in passwords.items():
+    print('Found credentials for username "%s".' % credential['username'])
 
 print('')
 confirm = raw_input('To confirm deletion(s), type "DELETE": ')
@@ -57,10 +58,11 @@ if confirm.upper() != "DELETE":
     print('')
     sys.exit(1)
 
-for name, credential in passwords:
+for name, credential in passwords.items():
     entity.deleteEntity(['admin', 'passwords'], name, namespace='code42', owner='nobody', sessionKey=sessionKey)
 
     print('Successfully cleared ' + credential['username'] + ' credentials.')
 
+print('')
 print('All Code42 credentials have been cleared.')
 print('')

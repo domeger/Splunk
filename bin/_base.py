@@ -86,8 +86,9 @@ class SplunkScript(object):
             # the username/password stored by the Code42 app.
             #
             # https://github.com/code42/Splunk/issues/2
-            passwords = (x for x in passwordEntities.values() if x['eai:acl']['app'] == 'code42')
-            for c in passwords:
+            passwords = {i:x for i, x in passwordEntities.items() if 'eai:acl' in x and 'app' in x['eai:acl'] \
+                                                                     and x['eai:acl']['app'] == 'code42'}
+            for i, c in passwords.items():
                 if 'username' in c and c['username']:
                     config['username'] = c['username']
                 if 'clear_password' in c and c['clear_password']:
