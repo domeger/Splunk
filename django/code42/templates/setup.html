@@ -1,0 +1,40 @@
+{% extends "splunkdj:base_with_app_bar.html" %}
+
+{% load splunkmvc %}
+
+{% block title %}Code42 App for Splunk{% endblock title %}
+
+{% block css %}
+    <link rel="stylesheet" type="text/css" href="{{STATIC_URL}}splunkdj/setup.css" />
+{% endblock css %}
+
+{% block content %}
+    <div class="container">
+        <div class="row">
+            <div class="span12">
+                <h2>Code42 App for Splunk</h2>
+                <form class="splunkdj-setup-form" method="post" action="">
+                    {% csrf_token %}
+
+                    <fieldset>
+                        <legend>Configure Code42</legend>
+                        <div class="standaloneHelp">
+                            <p class="helpText">You need to set up a Splunk user account with your Code42 Server.</p>
+                        </div>
+                    </fieldset>
+
+                    {{ form.as_p }}
+
+                    <input class="btn btn-primary" type="submit" value="Save" />
+                    {% if configured %}
+                        <a class="btn" href="{% url 'code42:home' %}">Cancel</a>
+                    {% endif %}
+
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock content%}
+
+{% block js %}
+{% endblock js %}
