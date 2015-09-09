@@ -180,9 +180,7 @@ top 10 OS</query>
         <search>
           <query>index="code42" sourcetype="c42userevent" earliest=-1d active=true username!=admin |
 dedup userUid sortby -modificationDate |
-eval date = substr(creationDate,1, 10) |
-eval create_date = strptime(date, "%Y-%m-%d") |
-eval UserCreationDate = strftime(create_date,"%Y-%m-%d") |
+eval UserCreationDate = substr(creationDate,1, 10) |
 chart count by UserCreationDate |
 accum count</query>
           <earliest>0</earliest>
