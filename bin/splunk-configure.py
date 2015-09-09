@@ -61,15 +61,6 @@ class ConfigApp(admin.MConfigHandler):
       self.itemDefault('hostname', '')
       self.itemDefault('port', '4285')
 
-      hostname = self.callerArgs.data['hostname'][0]
-      if len(hostname) > 0 and not hostname.startswith('http'):
-        # Try and figure out a protocol for this hostname
-
-        if int(self.callerArgs.data['port'][0]) in [443, 4285, 7285]:
-          self.callerArgs.data['hostname'][0] = "https://%s" % hostname
-        else:
-          self.callerArgs.data['hostname'][0] = "http://%s" % hostname
-
     self.writeConf('c42config', name, self.callerArgs.data)
     self.writeInputs()
 

@@ -1,5 +1,4 @@
 {% extends "splunkdj:base_with_app_bar.html" %}
-
 {% load splunkmvc %}
 
 {% block title %}Code42 App for Splunk{% endblock title %}
@@ -7,6 +6,9 @@
 {% block css %}
     <link rel="stylesheet" type="text/css" href="{{STATIC_URL}}splunkdj/setup.css" />
 {% endblock css %}
+
+{% block js %}
+{% endblock js %}
 
 {% block content %}
     <div class="container">
@@ -35,6 +37,3 @@
         </div>
     </div>
 {% endblock content%}
-
-{% block js %}
-{% endblock js %}

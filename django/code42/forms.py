@@ -1,17 +1,24 @@
+"""Django page classes for form view controllers"""
 # NOTE: Using django.forms directly instead of splunkdj.setup.forms
 from django import forms
-import os.path
 import splunklib.client as client
-import subprocess
-import sys
 
 class SetupForm(forms.Form):
+    """Setup form for the Code42 App for Splunk settings"""
+
     console_hostname = forms.CharField(label="Console hostname")
     console_port = forms.IntegerField(label="Console port")
 
     console_username = forms.CharField(label="Console username")
     console_password = forms.CharField(label="Console password", widget=forms.PasswordInput(), required=False)
-    console_password_confirm = forms.CharField(label="Console password (again)", widget=forms.PasswordInput(), required=False)
+    console_password_confirm = forms.CharField(label="Console password (again)", widget=forms.PasswordInput(),
+                                               required=False)
+
+    # Non-form objects
+
+    # HACK: See `clean()` function for details on storing this variable with
+    #       as a class variable.
+    service = None
 
     @classmethod
     def load(cls, request):
@@ -19,35 +26,28 @@ class SetupForm(forms.Form):
 
         service = request.service
 
-        # Locate the storage/passwords entity that contains the Twitter
-        # credentials, if available.
-        #
-        # It is only stored in storage/passwords because older versions of
-        # this app put it there. If writing this app from scratch,
-        # I'd probably put it in a conf file instead because it
-        # is a lot easier to access.
-        passwords_endpoint = client.Collection(service, 'storage/passwords')
-        passwords = passwords_endpoint.list()
-        first_password = passwords[0] if len(passwords) > 0 else None
-
-        config_endpoint = client.Collection(service, 'code42/config')
-        config = config_endpoint.list()
+        # Get the configuration of this app from the encrypted credential store,
+        # and from our custom config.conf file.
+        credential = cls._get_credentials(service)
+        config = cls._get_config(service)
 
         settings = {}
 
-        # Read credentials from the password entity.
-        # NOTE: Reading from 'password' setting just gives a bunch of asterisks,
-        #       so we need to read from the 'clear_password' setting instead.
-        # NOTE: Reading from 'name' setting gives back a string in the form
-        #       '<realm>:<username>', when we only want the username.
-        #       So we need to read from the 'username' setting instead.
-        settings['console_hostname'] = config[0]['hostname']
-        settings['console_port'] = config[0]['port']
+        # Config settings always have a default embedded in the app, so we can
+        # leave them as-is here.
+        settings['console_hostname'] = config['hostname']
+        settings['console_port'] = config['port'] if config else 4285
 
-        settings['console_username'] = first_password['username'] if first_password else ''
+        # Credential settings may not exist, so we need the default to be explicitly
+        # determined (usually empty strings) here.
+        settings['console_username'] = credential['username'] if credential else ''
 
-        # Create a SetupForm with the settings
-        return cls(settings)
+        obj = cls(settings)
+
+        if credential:
+            obj.fields['console_password'].help_text = "Leave blank to keep existing password."
+
+        return obj
 
     def clean(self):
         """Perform validations that require multiple fields."""
@@ -60,19 +60,23 @@ class SetupForm(forms.Form):
         if console_password != console_password_confirm:
             raise forms.ValidationError('Passwords did not match.')
 
-        raise forms.ValidationError(str(self.__dict__))
-
         if not console_password:
-            service = request.service
+            # HACK: We don't have a way to get the service object in this instance
+            #       because this is called automatically by splunkdj and skips it as
+            #       an argument. We manually set this in `views.py`
+            service = SetupForm.service
 
-            passwords_endpoint = client.Collection(service, 'storage/passwords')
-            passwords = passwords_endpoint.list()
-            first_password = passwords[0] if len(passwords) > 0 else None
+            credential = self._get_credentials(service)
 
-            cleaned_data.set('console_password', first_password['clear_password'])
-            console_password = first_password['clear_password']
+            if not credential:
+                raise forms.ValidationError('Username/password is required.')
 
-        # Verify that the credentials are valid by connecting to Twitter
+            # The `save()` function is going to resave these credentials, so we need
+            # to make sure it doesn't get saved as an empty password.
+            self.cleaned_data['console_password'] = credential['clear_password']
+            console_password = credential['clear_password']
+
+        # Verify that the credentials are valid by connecting to the Code42 server.
         credentials = [
             cleaned_data.get('console_hostname', None),
             cleaned_data.get('console_port', None),
@@ -82,11 +86,11 @@ class SetupForm(forms.Form):
 
         if None in credentials:
             # One of the credential fields didn't pass validation,
-            # so don't even try connecting to a Code42 server.
+            # so don't even try connecting to the Code42 server.
             pass
         else:
             if not SetupForm._validate_server_credentials(credentials):
-                raise forms.ValidationError('Invalid Twitter credentials.')
+                raise forms.ValidationError('Invalid Code42 Server credentials.')
 
         return cleaned_data
 
@@ -96,22 +100,56 @@ class SetupForm(forms.Form):
         service = request.service
         settings = self.cleaned_data
 
-        first_password_settings = {
+        credential_settings = {
             'realm': '',
             'name': settings['console_username'],
             'password': settings['console_password']
         }
+        config_settings = {
+            'hostname': settings['console_hostname'],
+            'port': settings['console_port']
+        }
 
-        # Replace old password entity with new one
+        # Replace old password entity with new one.
+        credential = self._get_credentials(service)
+        if credential:
+            credential.delete()
+
+        self._set_credentials(service, **credential_settings)
+        self._set_config(service, **config_settings)
+
+    @staticmethod
+    def _get_credentials(service):
+        """Get the correct, properly filtered Code42 Server credentials entity"""
         passwords_endpoint = client.Collection(service, 'storage/passwords')
-        passwords = passwords_endpoint.list()
-        if len(passwords) > 0:
-            first_password = passwords[0]
-            first_password.delete()
-        first_password = passwords_endpoint.create(**first_password_settings)
+        passwords = [x for x in passwords_endpoint.list() if 'access' in x and 'app' in x['access'] \
+                                                             and x['access']['app'] == 'code42']
+        credential = passwords[0] if len(passwords) > 0 else None
+
+        return credential
+
+    @staticmethod
+    def _set_credentials(service, **kwargs):
+        """Set new Code42 Server credentials entity"""
+        passwords_endpoint = client.Collection(service, 'storage/passwords')
+        passwords_endpoint.create(**kwargs)
+
+    @staticmethod
+    def _get_config(service):
+        """Get non-credential Code42 configuration settings entity"""
+        config_endpoint = client.Collection(service, 'code42/config')
+        configs = config_endpoint.list()
+
+        return configs[0] if len(configs) > 0 else None
+
+    @classmethod
+    def _set_config(cls, service, **kwargs):
+        config_endpoint = client.Collection(service, 'code42/config/console')
+        config_endpoint.post(**kwargs)
 
     @staticmethod
     def _validate_server_credentials(credentials):
+        """Validate a configuration against a Code42 Server to test credentials"""
         hostname, port, username, password = credentials
 
         # TODO: Validate server credentials here.

@@ -1,5 +1,8 @@
-from django.conf.urls import patterns, include, url
-from splunkdj.utility.views import render_template as render
+"""Django URL dispatcher"""
+
+from django.conf.urls import patterns, url
+
+# pylint: disable=bad-continuation
 
 urlpatterns = patterns('',
     # NOTE: The framework always expects the default view to be called 'home'.
