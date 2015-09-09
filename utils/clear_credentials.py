@@ -11,56 +11,58 @@
 
 import os
 import sys
-import httplib
-import base64 as encode
 import getpass as password
 
-from splunk.clilib import cli_common as cli
+import splunk.entity as entity
+import splunk.auth as auth
 
 SPLUNK_HOME = os.environ['SPLUNK_HOME']
 APP_CONFIG = os.path.join(SPLUNK_HOME, 'etc', 'apps', 'code42', 'local', 'app.conf')
 
 print('')
 
-config = cli.getConfStanzas('app')
-credential_keys = []
-for key, value in config.iteritems():
-    if key.startswith('credential'):
-        credential_keys.append(key)
-
-if len(credential_keys) == 0:
-    print('All Code42 credentials have already been cleared.')
-    print('')
-    sys.exit(0)
-
-for credential_key in credential_keys:
-    credentials = credential_key.split(':')
-    code42_username = credentials[2]
-    print('Clearing Splunk Code42 credentials for ' + code42_username + '.')
-
+print('This script will remove all saved credentials from the Code42 app.')
+print('You will confirm this before they are removed.')
 print('')
 
 splunk_username = raw_input('Splunk Username: ')
 splunk_password = password.getpass('Splunk Password: ')
 print('')
 
-userAndPass = encode.b64encode(splunk_username + ':' + splunk_password).decode("ascii")
-headers = { 'Authorization' : 'Basic %s' %  userAndPass }
+sessionKey = auth.getSessionKey(splunk_username, splunk_password)
 
-for credential_key in credential_keys:
-    credentials = credential_key.split(':')
-    code42_username = credentials[2]
+passwordEntities = entity.getEntities(['admin', 'passwords'], namespace='code42', owner='nobody', sessionKey=sessionKey)
 
-    conn = httplib.HTTPSConnection('localhost', 8089)
-    conn.request('DELETE', '/servicesNS/nobody/code42/storage/passwords/%3A' + code42_username + '%3A', headers=headers)
-    resp = conn.getresponse()
+# The permission "Sharing for config file-only objects" adds other app's
+# credentials to this list. We need to make sure we filter down to only
+# the username/password stored by the Code42 app.
+#
+# https://github.com/code42/Splunk/issues/2
+passwords = {i:x for i, x in passwordEntities.items() if 'eai:acl' in x and 'app' in x['eai:acl'] \
+                                                         and x['eai:acl']['app'] == 'code42'}
 
-    if resp.status == 401:
-        raise Exception('Splunk username or password is invalid, or does not have valid permission.')
-    elif resp.status != 200:
-        raise Exception('Error ' + resp.status + ' deleting user credentials.')
+if len(passwords) == 0:
+    print('All Code42 credentials have already been cleared.')
+    print('')
+    sys.exit(0)
 
-    print('Successfully cleared ' + code42_username + ' credentials.')
+for name, credential in passwords.items():
+    print('Found credentials for username "%s".' % credential['username'])
 
+print('')
+confirm = raw_input('To confirm deletion(s), type "DELETE": ')
+print('')
+
+if confirm.upper() != "DELETE":
+    print('Aborting.')
+    print('')
+    sys.exit(1)
+
+for name, credential in passwords.items():
+    entity.deleteEntity(['admin', 'passwords'], name, namespace='code42', owner='nobody', sessionKey=sessionKey)
+
+    print('Successfully cleared ' + credential['username'] + ' credentials.')
+
+print('')
 print('All Code42 credentials have been cleared.')
 print('')
