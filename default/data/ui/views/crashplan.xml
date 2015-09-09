@@ -182,7 +182,7 @@ top 10 OS</query>
 dedup userUid sortby -modificationDate |
 eval date = substr(creationDate,1, 10) |
 eval create_date = strptime(date, "%Y-%m-%d") |
-eval UserCreationDate = strftime(create_date,"%m-%d-%Y") |
+eval UserCreationDate = strftime(create_date,"%Y-%m-%d") |
 chart count by UserCreationDate |
 accum count</query>
           <earliest>0</earliest>
