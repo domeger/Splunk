@@ -17,8 +17,8 @@ class SetupForm(forms.Form):
 
     # Non-form objects
 
-    # HACK: See `clean()` function for details on storing this variable with
-    #       as a class variable.
+    # HACK: See `clean()` function about why we need to store `service` as a
+    #       class object on SetupForm.
     service = None
 
     @classmethod
