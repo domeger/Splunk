@@ -1,13 +1,14 @@
 """Django page classes for form view controllers"""
 # NOTE: Using django.forms directly instead of splunkdj.setup.forms
 from django import forms
+from django.contrib import messages
 import splunklib.client as client
 
 class SetupForm(forms.Form):
     """Setup form for the Code42 App for Splunk settings"""
 
     console_hostname = forms.CharField(label="Console hostname")
-    console_port = forms.IntegerField(label="Console port")
+    console_port = forms.IntegerField(label="Console port", initial=4285)
 
     console_username = forms.CharField(label="Console username")
     console_password = forms.CharField(label="Console password", widget=forms.PasswordInput(), required=False)
@@ -36,7 +37,7 @@ class SetupForm(forms.Form):
         # Config settings always have a default embedded in the app, so we can
         # leave them as-is here.
         settings['console_hostname'] = config['hostname']
-        settings['console_port'] = config['port'] if config else 4285
+        settings['console_port'] = config['port']
 
         # Credential settings may not exist, so we need the default to be explicitly
         # determined (usually empty strings) here.
@@ -117,6 +118,8 @@ class SetupForm(forms.Form):
 
         self._set_credentials(service, **credential_settings)
         self._set_config(service, **config_settings)
+
+        messages.success(request, 'Successfully saved settings.')
 
     @staticmethod
     def _get_credentials(service):

@@ -5,6 +5,26 @@
 
 {% block css %}
     <link rel="stylesheet" type="text/css" href="{{STATIC_URL}}splunkdj/setup.css" />
+    <style type="text/css">
+        .splunkdj-setup-form .messages {
+            /* Copied from Bootstrap: .alert */
+            padding: 8px 35px 8px 14px !important;  /* override splunkstrap */
+            margin: 0 0 12px 0 !important;
+            list-style: none;
+            margin-bottom: 20px;
+            text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+            background-color: #fcf8e3;
+            border: 1px solid #fbeed5;
+            -webkit-border-radius: 4px;
+               -moz-border-radius: 4px;
+                    border-radius: 4px;
+
+            /* Copied from Bootstrap: .alert-info */
+            color: #3a87ad;
+            background-color: #d9edf7;
+            border-color: #bce8f1;
+        }
+    </style>
 {% endblock css %}
 
 {% block js %}
@@ -20,6 +40,15 @@
 
                     <fieldset>
                         <legend>Configure Code42</legend>
+
+                        {% if messages %}
+                        <ul class="messages">
+                            {% for message in messages %}
+                            <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+
                         <div class="standaloneHelp">
                             <p class="helpText">You need to set up a Splunk user account with your Code42 Server.</p>
                         </div>
