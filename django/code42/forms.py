@@ -131,8 +131,15 @@ class SetupForm(forms.Form):
     def _get_credentials(service):
         """Get the correct, properly filtered Code42 Server credentials entity"""
         passwords_endpoint = client.Collection(service, 'storage/passwords')
-        passwords = [x for x in passwords_endpoint.list() if 'access' in x and 'app' in x['access'] \
-                                                             and x['access']['app'] == 'code42']
+
+        def _password_match(credential):
+            """Determine whether a credential matches this app namespace"""
+            try:
+                return credential['access']['app'] == 'code42'
+            except AttributeError:
+                return False
+
+        passwords = [x for x in passwords_endpoint.list() if _password_match(x)]
         credential = passwords[0] if len(passwords) > 0 else None
 
         return credential

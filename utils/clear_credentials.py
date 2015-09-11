@@ -38,8 +38,14 @@ passwordEntities = entity.getEntities(['admin', 'passwords'], namespace='code42'
 # the username/password stored by the Code42 app.
 #
 # https://github.com/code42/Splunk/issues/2
-passwords = {i:x for i, x in passwordEntities.items() if 'eai:acl' in x and 'app' in x['eai:acl'] \
-                                                         and x['eai:acl']['app'] == 'code42'}
+def _password_match(credential):
+    """Determine whether a credential matches this app namespace"""
+    try:
+        return credential['eai:acl']['app'] == 'code42'
+    except AttributeError:
+        return False
+
+passwords = {i:x for i, x in passwordEntities.items() if _password_match(x)}
 
 if len(passwords) == 0:
     print('All Code42 credentials have already been cleared.')
