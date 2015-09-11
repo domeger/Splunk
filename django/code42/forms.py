@@ -1,4 +1,8 @@
 """Django page classes for form view controllers"""
+import base64
+import requests
+import json
+
 # NOTE: Using django.forms directly instead of splunkdj.setup.forms
 from django import forms
 from django.contrib import messages
@@ -8,7 +12,7 @@ class SetupForm(forms.Form):
     """Setup form for the Code42 App for Splunk settings"""
 
     console_hostname = forms.CharField(label="Console hostname")
-    console_port = forms.IntegerField(label="Console port", initial=4285)
+    console_port = forms.CharField(label="Console port", initial='4285', required=False)
 
     console_username = forms.CharField(label="Console username")
     console_password = forms.CharField(label="Console password", widget=forms.PasswordInput(), required=False)
@@ -77,21 +81,20 @@ class SetupForm(forms.Form):
             self.cleaned_data['console_password'] = credential['clear_password']
             console_password = credential['clear_password']
 
-        # Verify that the credentials are valid by connecting to the Code42 server.
-        credentials = [
-            cleaned_data.get('console_hostname', None),
-            cleaned_data.get('console_port', None),
-            cleaned_data.get('console_username', None),
-            console_password
-        ]
-
-        if None in credentials:
-            # One of the credential fields didn't pass validation,
-            # so don't even try connecting to the Code42 server.
-            pass
+        port = cleaned_data.get('console_port', None)
+        if port and len(port) > 0:
+            try:
+                port = int(port)
+            except ValueError as exception:
+                raise forms.ValidationError('Port must be a number or empty.')
         else:
-            if not SetupForm._validate_server_credentials(credentials):
-                raise forms.ValidationError('Invalid Code42 Server credentials.')
+            port = None
+
+        hostname = cleaned_data.get('console_hostname', None)
+        username = cleaned_data.get('console_username', None)
+
+        if not SetupForm._validate_server_credentials(hostname, username, console_password, port=port):
+            raise forms.ValidationError('Invalid Code42 Server credentials.')
 
         return cleaned_data
 
@@ -108,7 +111,10 @@ class SetupForm(forms.Form):
         }
         config_settings = {
             'hostname': settings['console_hostname'],
-            'port': settings['console_port']
+            # We have to save empty value as a space, otherwise it turns into
+            # the default value. Splunk trims strings automatically when reading
+            # stanza items.
+            'port': settings['console_port'] or ' '
         }
 
         # Replace old password entity with new one.
@@ -147,14 +153,38 @@ class SetupForm(forms.Form):
 
     @classmethod
     def _set_config(cls, service, **kwargs):
+        """Set non-credential Code42 configuration settings entity"""
         config_endpoint = client.Collection(service, 'code42/config/console')
         config_endpoint.post(**kwargs)
 
     @staticmethod
-    def _validate_server_credentials(credentials):
+    def _validate_server_credentials(hostname, username, password, port=None):
         """Validate a configuration against a Code42 Server to test credentials"""
-        hostname, port, username, password = credentials
 
-        # TODO: Validate server credentials here.
+        token = base64.b64encode("%s:%s" % (username, password)).decode('UTF-8')
 
-        return True
+        header = {}
+        header["Authorization"] = "Basic %s" % token
+        header["Content-Type"] = "application/json"
+
+        url = hostname.rstrip('/')
+        if not hostname.startswith('http'):
+            # Try and figure out a protocol for this hostname
+
+            if not port:
+                # Assume port-forwarding environments use HTTPS.
+                url = "https://%s" % hostname
+            if port in [443, 4285, 7285]:
+                url = "https://%s" % hostname
+            else:
+                url = "http://%s" % hostname
+
+        if port:
+            url = "%s:%d" % (url, port)
+
+        url = "%s/api/AuthToken" % url
+
+        request = requests.post(url, headers=header, verify=False)
+        response = json.loads(request.content)
+
+        return request.status_code == 200 and isinstance(response.get('data', None), list)
