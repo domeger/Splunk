@@ -9,6 +9,7 @@ code42.tar.gz
 
 # Compiled python files
 *.pyc
+*.pyo
 
 # Eclipse project files
 .project
