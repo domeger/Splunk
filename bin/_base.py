@@ -31,7 +31,7 @@ class SplunkScript(object):
 
         if os.name == 'nt':
             # Try to find Python3 from it's default install location.
-            possiblePaths = glob.glob("C:\Python3*")
+            possiblePaths = glob.glob("C:\Python3*") + glob.glob("C:\Program Files\Python 3*")
 
             for possiblePath in possiblePaths:
                 possiblePython = "%s\python.exe" % possiblePath
@@ -39,11 +39,17 @@ class SplunkScript(object):
                     PYTHONPATH = possiblePython
                     break
 
-        if not PYTHONPATH:
-            sys.stderr.write("Python3 is not installed. Reverting to (potentially unstable) default Python.\n")
+            if not PYTHONPATH:
+                # On Windows, The `python.exe` in $PATH might still be Python 3, but this is a last resort.
+                PYTHONPATH = which("python.exe")
 
+                sys.stderr.write("Python3 may not be installed. Reverting to (potentially unstable) `%s`\n" % PYTHONPATH)
+
+        if not PYTHONPATH:
             # We can't use `which("python")` because it will pick up on Splunk's embedded Python.
             PYTHONPATH = "/usr/bin/python"
+            
+            sys.stderr.write("Python3 is not installed. Reverting to (potentially unstable) default Python.\n")
 
         self.PYTHONPATH = PYTHONPATH
 
