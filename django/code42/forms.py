@@ -4,6 +4,7 @@ import requests
 import json
 
 # NOTE: Using django.forms directly instead of splunkdj.setup.forms
+# pylint: disable=import-error
 from django import forms
 from django.contrib import messages
 import splunklib.client as client
@@ -85,7 +86,7 @@ class SetupForm(forms.Form):
         if port and len(port) > 0:
             try:
                 port = int(port)
-            except ValueError as exception:
+            except ValueError:
                 raise forms.ValidationError('Port must be a number or empty.')
         else:
             port = None

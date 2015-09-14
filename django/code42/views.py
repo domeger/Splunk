@@ -1,3 +1,6 @@
+"""Django view controller hook"""
+
+# pylint: disable=import-error
 from .forms import SetupForm
 from django.contrib.auth.decorators import login_required
 from django.core.urlresolvers import reverse

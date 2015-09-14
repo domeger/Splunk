@@ -1,5 +1,6 @@
 """Django URL dispatcher"""
 
+# pylint: disable=import-error
 from django.conf.urls import patterns, url
 
 # pylint: disable=invalid-name
