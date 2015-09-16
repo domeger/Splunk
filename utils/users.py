@@ -28,6 +28,8 @@ class C42Users(C42Script):
         self.log("Exporting User information to " + self.args.output)
         super(C42Users, self).outline()
 
+    def end(self):
+        self.log("Finished exporting user events.")
 
     def main(self):
         timestamp = datetime.datetime.now().isoformat()

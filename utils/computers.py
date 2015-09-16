@@ -26,6 +26,9 @@ class C42Computers(C42Script):
         self.log("Exporting computer information to " + self.args.output)
         super(C42Computers, self).outline()
 
+    def end(self):
+        self.log("Finished exporting computer events.")
+
     def main(self):
         timestamp = datetime.datetime.now().isoformat()
         output_file = self.args.output
