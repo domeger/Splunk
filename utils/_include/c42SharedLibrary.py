@@ -77,6 +77,7 @@ class c42Lib(object):
     cp_logLevel = "INFO"
     cp_logFileName = "c42SharedLibrary.log"
     MAX_PAGE_NUM = 250
+    cp_verify_ssl = False
 
 
     #
@@ -132,20 +133,20 @@ class c42Lib(object):
 
         if type == "get":
             logging.debug("Payload : " + str(payload))
-            r = requests.get(url, params=params, data=json.dumps(payload), headers=header, verify=False)
+            r = requests.get(url, params=params, data=json.dumps(payload), headers=header, verify=c42Lib.cp_verify_ssl)
             logging.debug(r.text)
             return r
         elif type == "delete":
-            r = requests.delete(url, params=params, data=json.dumps(payload), headers=header, verify=False)
+            r = requests.delete(url, params=params, data=json.dumps(payload), headers=header, verify=c42Lib.cp_verify_ssl)
             logging.debug(r.text)
             return r
         elif type == "post":
-            r = requests.post(url, params=params, data=json.dumps(payload), headers=header, verify=False)
+            r = requests.post(url, params=params, data=json.dumps(payload), headers=header, verify=c42Lib.cp_verify_ssl)
             logging.debug(r.text)
             return r
         elif type == "put":
             # logging.debug(str(json.dumps(payload)))
-            r = requests.put(url, params=params, data=json.dumps(payload), headers=header, verify=False)
+            r = requests.put(url, params=params, data=json.dumps(payload), headers=header, verify=c42Lib.cp_verify_ssl)
             logging.debug(r.text)
             return r
         else:

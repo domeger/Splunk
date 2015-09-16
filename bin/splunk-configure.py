@@ -16,7 +16,7 @@ import splunk.entity as en
 class ConfigApp(admin.MConfigHandler):
   def setup(self):
     if self.requestedAction == admin.ACTION_EDIT:
-      args = ['hostname', 'port']
+      args = ['hostname', 'port', 'verify_ssl']
       for arg in args:
         self.supportedArgs.addOptArg(arg)
 
@@ -60,6 +60,7 @@ class ConfigApp(admin.MConfigHandler):
 
       self.itemDefault('hostname', '')
       self.itemDefault('port', '4285')
+      self.itemDefault('verify_ssl', 'true')
 
     self.writeConf('c42config', name, self.callerArgs.data)
     self.writeInputs()

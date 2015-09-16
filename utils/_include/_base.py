@@ -72,6 +72,7 @@ class C42Script(object):
         parser.add_argument('-s', dest='hostname', default='https://spyder.code42.com', help='Code42 Console URL (without port)')
         parser.add_argument('-u', dest='username', default='admin', help='Code42 Console Username')
         parser.add_argument('-port', dest='port', default=4285, type=int, help='Code42 Console Port')
+        parser.add_argument('--no-verify', dest='verify_ssl', action='store_false', default=True, help='Disable SSL certificate verification when making HTTPS requests.')
         parser.add_argument('-p', dest='password', default='', help='Code42 Console password (replaces prompt)')
         parser.add_argument('-log', dest='logfile', default=None, help='Logfile to print informational output messages (instead of STDOUT)')
 
@@ -294,6 +295,7 @@ class C42Script(object):
         # Use port `0` for excluding port in HTTP requests (for some port-forwarding environments).
         self.console.cp_port = str(self.args.port) if self.args.port > 0 else ""
         self.console.cp_username = self.args.username
+        self.console.cp_verify_ssl = self.args.verify_ssl
 
         if len(self.args.password) > 0:
             self.console.cp_password = self.args.password
