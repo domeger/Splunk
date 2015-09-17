@@ -27,10 +27,16 @@ class SplunkScript(object):
 
     def __init__(self):
         # Path to the system Python executable on your Splunk server.
-        PYTHONPATH = which("python3")
+        PATH_FILE = os.path.join(self.appHome, 'local', 'python.path')
+        if os.path.exists(PATH_FILE):
+            # If there's a PATH_FILE, give it highest priority.
+            with open(PATH_FILE, 'r') as f:
+                PYTHONPATH = f.readline().strip()
+        else:
+            PYTHONPATH = which("python3")
 
-        if os.name == 'nt':
-            # Try to find Python3 from it's default install location.
+        if os.name == 'nt' and not PYTHONPATH:
+            # Try to find Python3 from it's default Windows install locations.
             possiblePaths = glob.glob("C:\Python3*") + glob.glob("C:\Program Files\Python 3*")
 
             for possiblePath in possiblePaths:
