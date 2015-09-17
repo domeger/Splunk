@@ -23,8 +23,9 @@ be installed for the app to import events successfully.
     - We search for `python3` in your `$PATH` variable, followed by several
     common locations to find the full path to Python 3 (including Windows
     Python). If you have a non-standard installation (such as `python3.4` or
-    `python-3`), you will need to update `bin/_base.py#L46` with the correct
-    path.
+    `python-3`), you can create a new file at `./local/python.path` with the
+    correct path. You can run the following command to write a path file.
+        - `which python3.4 > /path/to/splunk/etc/apps/code42/local/python.path`
 1. Install Python dependencies using [pip][pip] (see below).
 
 ```
