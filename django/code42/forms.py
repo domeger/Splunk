@@ -14,6 +14,7 @@ class SetupForm(forms.Form):
 
     console_hostname = forms.CharField(label="Console hostname")
     console_port = forms.CharField(label="Console port", initial='4285', required=False)
+    console_verify_ssl = forms.BooleanField(label="Require SSL certificate validation", initial=True, required=False)
 
     console_username = forms.CharField(label="Console username")
     console_password = forms.CharField(label="Console password", widget=forms.PasswordInput(), required=False)
@@ -43,6 +44,7 @@ class SetupForm(forms.Form):
         # leave them as-is here.
         settings['console_hostname'] = config['hostname']
         settings['console_port'] = config['port']
+        settings['console_verify_ssl'] = config['verify_ssl'] == 'true'
 
         # Credential settings may not exist, so we need the default to be explicitly
         # determined (usually empty strings) here.
@@ -93,9 +95,11 @@ class SetupForm(forms.Form):
 
         hostname = cleaned_data.get('console_hostname', None)
         username = cleaned_data.get('console_username', None)
+        verify_ssl = cleaned_data.get('console_verify_ssl', False)
 
-        if not SetupForm._validate_server_credentials(hostname, username, console_password, port=port):
-            raise forms.ValidationError('Invalid Code42 Server credentials.')
+        if not SetupForm._validate_server_credentials(hostname, username, console_password,
+                                                      port=port, verify_ssl=verify_ssl):
+            raise forms.ValidationError('Could not verify Code42 Server info or credentials.')
 
         return cleaned_data
 
@@ -115,7 +119,8 @@ class SetupForm(forms.Form):
             # We have to save empty value as a space, otherwise it turns into
             # the default value. Splunk trims strings automatically when reading
             # stanza items.
-            'port': settings['console_port'] or ' '
+            'port': settings['console_port'] or ' ',
+            'verify_ssl': 'true' if settings['console_verify_ssl'] else 'false'
         }
 
         # Replace old password entity with new one.
@@ -166,7 +171,7 @@ class SetupForm(forms.Form):
         config_endpoint.post(**kwargs)
 
     @staticmethod
-    def _validate_server_credentials(hostname, username, password, port=None):
+    def _validate_server_credentials(hostname, username, password, port=None, verify_ssl=True):
         """Validate a configuration against a Code42 Server to test credentials"""
 
         token = base64.b64encode("%s:%s" % (username, password)).decode('UTF-8')
@@ -192,7 +197,11 @@ class SetupForm(forms.Form):
 
         url = "%s/api/AuthToken" % url
 
-        request = requests.post(url, headers=header, verify=False)
+        try:
+            request = requests.post(url, headers=header, verify=verify_ssl)
+        except requests.RequestException:
+            return False
+
         response = json.loads(request.content)
 
         return request.status_code == 200 and isinstance(response.get('data', None), list)

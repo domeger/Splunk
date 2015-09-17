@@ -111,6 +111,8 @@ class SplunkScript(object):
                     config['hostname'] = c['hostname']
                 if 'port' in c and c['port']:
                     config['port'] = c['port']
+                if 'verify_ssl' in c and c['verify_ssl']:
+                    config['verify_ssl'] = c['verify_ssl'] == 'true'
 
             if ('username' not in config or
                 'password' not in config or
@@ -144,6 +146,9 @@ class SplunkScript(object):
                                 '-port', self.config['port'],
                                 '-u', self.config['username'],
                                 '-p', self.config['password']])
+            if not self.config['verify_ssl']:
+                arguments.append('--no-verify')
+
         if output_logfile:
             log_folder = os.path.dirname(output_logfile)
             if not os.path.exists(log_folder):
