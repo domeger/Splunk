@@ -24,10 +24,4 @@ def setup(request):
         SetupForm,
         reverse('code42:setup'))
 
-    # HACK: Workaround DVPL-4647 (Splunk 6.1 and below):
-    #       Refresh current app's state so that non-framework views
-    #       observe when the app becomes configured.
-    app_name = service.namespace['app']
-    service.apps[app_name].post('_reload')
-
     return result
