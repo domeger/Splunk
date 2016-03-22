@@ -1,12 +1,7 @@
-# File: _c42_csv.py
-# Author: Nick Wallin
-# Author: Carl Benson
+# Copyright (c) 2015 - 2016 Code42 Software, Inc.
 #
-# Base class for parsing complex Python objects into a CSV output
-# format.
-#
-
-# KeySet and Key classes courtesy of Carl Benson
+# This source file is under the license available at
+# https://github.com/code42/Splunk/blob/master/LICENSE.md
 
 class KeySet:
     """KeySet behaves like a set of Keys that merges appropriately

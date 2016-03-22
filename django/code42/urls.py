@@ -1,3 +1,8 @@
+# Copyright (c) 2015 - 2016 Code42 Software, Inc.
+#
+# This source file is under the license available at
+# https://github.com/code42/Splunk/blob/master/LICENSE.md
+
 """Django URL dispatcher"""
 
 # pylint: disable=import-error

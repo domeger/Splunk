@@ -1,9 +1,7 @@
-# File: _base.py
-# Author: Hank Brekke
+# Copyright (c) 2015 - 2016 Code42 Software, Inc.
 #
-# Base class for performing common API actions, such as querying
-# for devices or parsing arguments.
-#
+# This source file is under the license available at
+# https://github.com/code42/Splunk/blob/master/LICENSE.md
 
 import sys
 import abc

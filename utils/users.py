@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-
-# File: users.py
-# Author: Nick Wallin
 #
-# Usage: users.py [-s HOSTNAME] [-u USERNAME] [-port PORT] [-p PASSWORD] output
+# Copyright (c) 2015 - 2016 Code42 Software, Inc.
 #
+# This source file is under the license available at
+# https://github.com/code42/Splunk/blob/master/LICENSE.md
 
 import datetime
 import json

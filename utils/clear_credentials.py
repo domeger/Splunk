@@ -1,13 +1,9 @@
 #!/bin/echo Usage: splunk cmd python clear_credentials.py
-
-# File: clear_credentials.py
-# Author: Hank Brekke
 #
-# Clears Code42 Server login credentials from the Splunk app, allowing
-# new credentials to be saved using the Setup screen.
+# Copyright (c) 2015 - 2016 Code42 Software, Inc.
 #
-# Usage: splunk cmd python clear_credentials.py
-#
+# This source file is under the license available at
+# https://github.com/code42/Splunk/blob/master/LICENSE.md
 
 import os
 import sys

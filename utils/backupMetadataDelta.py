@@ -1,13 +1,9 @@
 #!/usr/bin/env python3
-
-# File: backupMetadataDelta.py
-# Author: Hank Brekke
 #
-# Calculate a backup selection metadata delta between two dates
-# for a list of computers.
+# Copyright (c) 2015 - 2016 Code42 Software, Inc.
 #
-# Usage: backupMetadataDelta.py [date1] [date2]
-#
+# This source file is under the license available at
+# https://github.com/code42/Splunk/blob/master/LICENSE.md
 
 import os
 import sys

@@ -1,9 +1,7 @@
-# File: _base.py
-# Author: Hank Brekke
+# Copyright (c) 2015 - 2016 Code42 Software, Inc.
 #
-# Base class for performing common Splunk actions, such as calling
-# out to external Python3 or getting a sessionKey.
-#
+# This source file is under the license available at
+# https://github.com/code42/Splunk/blob/master/LICENSE.md
 
 import os
 import sys
@@ -54,7 +52,7 @@ class SplunkScript(object):
         if not PYTHONPATH:
             # We can't use `which("python")` because it will pick up on Splunk's embedded Python.
             PYTHONPATH = "/usr/bin/python"
-            
+
             sys.stderr.write("Python3 is not installed. Reverting to (potentially unstable) default Python.\n")
 
         self.PYTHONPATH = PYTHONPATH

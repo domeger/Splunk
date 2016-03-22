@@ -1,9 +1,7 @@
-# File: splunk-userWrapper.py
-# Author: Nick Wallin
+# Copyright (c) 2015 - 2016 Code42 Software, Inc.
 #
-# Calls external users script and prints user information
-# to STDOUT for Splunk indexing.
-#
+# This source file is under the license available at
+# https://github.com/code42/Splunk/blob/master/LICENSE.md
 
 from _base import SplunkScript
 
