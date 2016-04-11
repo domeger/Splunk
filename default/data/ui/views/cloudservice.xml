@@ -1,0 +1,279 @@
+<form>
+  <label>Code42 Cloud Service</label>
+  <description>This dashboard is used to identify the data leaving a company via cloud service vectors.</description>
+  <fieldset autoRun="true" submitButton="false">
+    <input type="dropdown" token="useruid_tok" searchWhenChanged="true">
+      <label>Select a Username:</label>
+      <default>*</default>
+      <choice value="*">All Users</choice>
+      <search>
+        <query>| inputlookup user_lookup | dedup username sortby -modificationDate | table username, userUid</query>
+      </search>
+      <fieldForLabel>username</fieldForLabel>
+      <fieldForValue>userUid</fieldForValue>
+      <change>
+        <set token="my_label">$label$</set>
+        <set token="my_value">$value$</set>
+      </change>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <chart>
+        <title>Files Created by Device Count Last 7 Days</title>
+        <search>
+          <query>index=code42 sourcetype=c42securityevent "eventType"=PERSONAL_CLOUD_FILE_ACTIVITY "file.fileEventType"=create |
+lookup computer_lookup guid as deviceGuid |
+search userUid=$useruid_tok$ |
+table readableTimestamp,deviceGuid,name,file.fileEventType,file.fileName,file.md5,file.length,file.lastModified |
+chart count over name</query>
+          <earliest>-7d@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="count">10</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">pie</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+        <title>Files Created Timeline Last 7 Days</title>
+        <search>
+          <query>index=code42 sourcetype=c42securityevent "eventType"=PERSONAL_CLOUD_FILE_ACTIVITY "file.fileEventType"=create |
+lookup computer_lookup guid as deviceGuid |
+search userUid=$useruid_tok$ |
+timechart count as "Count of Files Created" |
+join [search index=code42 sourcetype=c42securityevent earliest=-1mon "eventType"=PERSONAL_CLOUD_FILE_ACTIVITY "file.fileEventType"=create |
+lookup computer_lookup guid as deviceGuid |
+search userUid=$useruid_tok$ | eventstats count as thirty_day_count |
+eval AVG = thirty_day_count/30 |
+timechart span=2mon avg(AVG) as "MONTH AVERAGE"]</query>
+          <earliest>-7d@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">none</option>
+        <option name="charting.axisTitleY.text">Count</option>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+        <title>Data Created Timeline Last 7 Days</title>
+        <search>
+          <query>index=code42 sourcetype=c42securityevent "eventType"=PERSONAL_CLOUD_FILE_ACTIVITY "file.fileEventType"=create |
+lookup computer_lookup guid as deviceGuid |
+search userUid=$useruid_tok$ |
+rename file.length as fileSize |
+timechart eval(sum(fileSize)/(1024)/(1024)) as "Megabytes" |
+join [search index=code42 sourcetype=c42securityevent earliest=-1mon "eventType"=PERSONAL_CLOUD_FILE_ACTIVITY "file.fileEventType"=create |
+lookup computer_lookup guid as deviceGuid |
+search userUid=$useruid_tok$ |
+rename file.length as fileSize |
+eventstats sum(fileSize) as thirty_day_total |
+eval AVG = thirty_day_total/30/1024/1024 |
+timechart span=2mon avg(AVG) as "MONTH AVERAGE"]</query>
+          <earliest>-7d@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">none</option>
+        <option name="charting.chart.overlayFields">"MONTH AVERAGE"</option>
+        <option name="charting.axisTitleY.text">Size in MB</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart>
+        <title>Files Created by File Type Top 10</title>
+        <search>
+          <query>index=code42 sourcetype=c42securityevent eventType=PERSONAL_CLOUD_FILE_ACTIVITY file.fileEventType=create file.fileName="*.*" file.fileName!="*cprestore*" file.fileName!="*testWrite*" |
+lookup computer_lookup guid as deviceGuid |
+search userUid=$useruid_tok$ |
+table file.fileName |
+rex field=file.fileName "(?&lt;fileType&gt;[^.]+)$" |
+chart count by fileType |
+sort count desc limit=10</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="charting.seriesColors">[4D4D4D,5DA5DA,FAA43A,60BD68,F17CB0,B2912F,B276B2,DECF3F,F15854,c2c1c2]</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">pie</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.chart.showPercent">true</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+        <title>Data Created by File Type Top 10</title>
+        <search>
+          <query>index=code42 sourcetype=c42securityevent eventType=PERSONAL_CLOUD_FILE_ACTIVITY file.fileEventType=create file.fileName="*.*" file.fileName!="*cprestore*" file.fileName!="*testWrite*" |
+lookup computer_lookup guid as deviceGuid |
+search userUid=$useruid_tok$ |
+rename file.length as length |
+eval "File Size" = round(length / 1024) |
+table file.fileName,"File Size" |
+rex field=file.fileName "(?&lt;fileType&gt;[^.]+)$" |
+chart sum("File Size") by fileType |
+sort sum("File Size") desc limit=10</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">none</option>
+        <option name="charting.seriesColors">[4D4D4D,5DA5DA,FAA43A,60BD68,F17CB0,B2912F,B276B2,DECF3F,F15854,c2c1c2]</option>
+        <option name="charting.axisTitleY.text">Size in KB</option>
+        <option name="charting.axisTitleX.text">File Types</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>File Create and Modify Events Last 24 Hours</title>
+        <search>
+          <query>index=code42 sourcetype=c42securityevent "eventType"=PERSONAL_CLOUD_FILE_ACTIVITY "file.fileEventType"!=scan file.md5!=ffffffffffffffffffffffffffffffff |
+lookup computer_lookup guid as deviceGuid |
+search userUid=$useruid_tok$ |
+rename file.lastModified as file_lastModified |
+eval file_lastModified=file_lastModified / 1000 |
+rename cloudStorageProvider.productName as "Cloud Service",name as "Device Name",username as Username,orgName as "C42 Org Name",file.fileEventType as "File Event Type",file.fileName as Filename,file.md5 as "File MD5Hash",file.length as "Filesize in Bytes",file_lastModified as "File Last Modified" |
+table _time,"Cloud Service","Device Name",Username,"C42 Org Name","File Event Type",Filename,"File MD5Hash","Filesize in Bytes","File Last Modified" |
+convert timeformat="%Y-%m-%d %H:%M:%S" ctime("File Last Modified") |
+sort _time desc</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">5</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>File Create and Modify Events Last 7 Days</title>
+        <search>
+          <query>index=code42 sourcetype=c42securityevent "eventType"=PERSONAL_CLOUD_FILE_ACTIVITY "file.fileEventType"!=scan file.md5!=ffffffffffffffffffffffffffffffff |
+lookup computer_lookup guid as deviceGuid |
+search userUid=$useruid_tok$ |
+rename file.lastModified as file_lastModified |
+eval file_lastModified=file_lastModified / 1000 |
+rename cloudStorageProvider.productName as "Cloud Service",name as "Device Name",username as Username,orgName as "C42 Org Name",file.fileEventType as "File Event Type",file.fileName as Filename,file.md5 as "File MD5Hash",file.length as "Filesize in Bytes",file_lastModified as "File Last Modified" |
+table _time,"Cloud Service","Device Name",Username,"C42 Org Name","File Event Type",Filename,"File MD5Hash","Filesize in Bytes","File Last Modified" |
+convert timeformat="%Y-%m-%d %H:%M:%S" ctime("File Last Modified") |
+sort _time desc</query>
+          <earliest>-7d@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">20</option>
+      </table>
+    </panel>
+  </row>
+</form>

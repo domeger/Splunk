@@ -17,6 +17,7 @@ code42.tar.gz
 
 # PyCharm project files
 .idea/
+*.iml
 
 # nosetest results
 nosetests.xml

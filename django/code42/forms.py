@@ -19,15 +19,16 @@
 # SOFTWARE.
 
 """Django page classes for form view controllers"""
-import base64
-import requests
-import json
+import sys
+import os
 
 # NOTE: Using django.forms directly instead of splunkdj.setup.forms
 # pylint: disable=import-error
 from django import forms
 from django.contrib import messages
 import splunklib.client as client
+
+import c42api
 
 class SetupForm(forms.Form):
     """Setup form for the Code42 App for Splunk settings"""
@@ -36,10 +37,19 @@ class SetupForm(forms.Form):
     console_port = forms.CharField(label="Console port", initial='4285', required=False)
     console_verify_ssl = forms.BooleanField(label="Require SSL certificate validation", initial=True, required=False)
 
+    script_devices = forms.CharField(label="Event Filter", required=False, help_text="""Filter imported objects to
+                                         only items inside the defined list of devices or organizations.<br/>
+                                         Device queries should be a comma separated list of deviceGUIDs, device names,
+                                         or organization names (prefixed with "org:" each time). Blank value will
+                                         import all objects.""")
+
     console_username = forms.CharField(label="Console username")
     console_password = forms.CharField(label="Console password", widget=forms.PasswordInput(), required=False)
     console_password_confirm = forms.CharField(label="Console password (again)", widget=forms.PasswordInput(),
                                                required=False)
+    analytics_help_text = "We'll write some anonymous usage data to disk and you can send it to us later."
+    console_collect_analytics = forms.BooleanField(label="Collect Analytics", initial=True, required=False,
+                                                   help_text=analytics_help_text)
 
     # Non-form objects
 
@@ -56,15 +66,19 @@ class SetupForm(forms.Form):
         # Get the configuration of this app from the encrypted credential store,
         # and from our custom config.conf file.
         credential = cls._get_credentials(service)
-        config = cls._get_config(service)
+        console_config = cls._get_config(service, stanza='console')
+        script_config = cls._get_config(service, stanza='script')
 
         settings = {}
 
         # Config settings always have a default embedded in the app, so we can
         # leave them as-is here.
-        settings['console_hostname'] = config['hostname']
-        settings['console_port'] = config['port']
-        settings['console_verify_ssl'] = config['verify_ssl'] == 'true'
+        settings['console_hostname'] = console_config['hostname']
+        settings['console_port'] = console_config['port']
+        settings['console_collect_analytics'] = console_config['collect_analytics'] == 'true'
+
+        settings['script_devices'] = script_config['devices']
+        settings['console_verify_ssl'] = console_config['verify_ssl'] == 'true'
 
         # Credential settings may not exist, so we need the default to be explicitly
         # determined (usually empty strings) here.
@@ -140,7 +154,11 @@ class SetupForm(forms.Form):
             # the default value. Splunk trims strings automatically when reading
             # stanza items.
             'port': settings['console_port'] or ' ',
-            'verify_ssl': 'true' if settings['console_verify_ssl'] else 'false'
+            'verify_ssl': 'true' if settings['console_verify_ssl'] else 'false',
+            'collect_analytics': 'true' if settings['console_collect_analytics'] else 'false',
+        }
+        script_config_settings = {
+            'devices': settings['script_devices'] or ' '
         }
 
         # Replace old password entity with new one.
@@ -149,7 +167,8 @@ class SetupForm(forms.Form):
             credential.delete()
 
         self._set_credentials(service, **credential_settings)
-        self._set_config(service, **config_settings)
+        self._set_config(service, stanza='console', **config_settings)
+        self._set_config(service, stanza='script', **script_config_settings)
 
         messages.success(request, 'Successfully saved settings.')
 
@@ -177,51 +196,29 @@ class SetupForm(forms.Form):
         passwords_endpoint.create(**kwargs)
 
     @staticmethod
-    def _get_config(service):
+    def _get_config(service, stanza='console'):
         """Get non-credential Code42 configuration settings entity"""
-        config_endpoint = client.Collection(service, 'code42/config')
+        config_endpoint = client.Collection(service, 'code42/config/%s' % stanza)
         configs = config_endpoint.list()
 
         return configs[0] if len(configs) > 0 else None
 
     @classmethod
-    def _set_config(cls, service, **kwargs):
+    def _set_config(cls, service, stanza='console', **kwargs):
         """Set non-credential Code42 configuration settings entity"""
-        config_endpoint = client.Collection(service, 'code42/config/console')
+        config_endpoint = client.Collection(service, 'code42/config/%s' % stanza)
         config_endpoint.post(**kwargs)
 
     @staticmethod
     def _validate_server_credentials(hostname, username, password, port=None, verify_ssl=True):
         """Validate a configuration against a Code42 Server to test credentials"""
 
-        token = base64.b64encode("%s:%s" % (username, password)).decode('UTF-8')
-
-        header = {}
-        header["Authorization"] = "Basic %s" % token
-        header["Content-Type"] = "application/json"
-
-        url = hostname.rstrip('/')
-        if not hostname.startswith('http'):
-            # Try and figure out a protocol for this hostname
-
-            if not port:
-                # Assume port-forwarding environments use HTTPS.
-                url = "https://%s" % hostname
-            if port in [443, 4285, 7285]:
-                url = "https://%s" % hostname
-            else:
-                url = "http://%s" % hostname
-
-        if port:
-            url = "%s:%d" % (url, port)
-
-        url = "%s/api/AuthToken" % url
+        server = c42api.Server(hostname, port=port, username=username, password=password, verify_ssl=verify_ssl)
 
         try:
-            request = requests.post(url, headers=header, verify=verify_ssl)
-        except requests.RequestException:
+            request = server.post('AuthToken')
+            response = server.json_from_response(request)
+        except (c42api.HTTPError, c42api.ConnectionError):
             return False
-
-        response = json.loads(request.content)
 
         return request.status_code == 200 and isinstance(response.get('data', None), list)

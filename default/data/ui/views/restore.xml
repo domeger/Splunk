@@ -1,0 +1,173 @@
+<dashboard>
+  <label>Code42 Restore Forensics</label>
+  <description>This dashboard is used to identify the data being restored throughout the company.</description>
+  <row>
+    <panel>
+      <chart>
+        <title>Restore Count by User Last 7 Days</title>
+        <search>
+          <query>index=code42 sourcetype=c42securityevent "eventType"=RESTORE_FILE file.restoreSuccessful=true |
+join restoreId [search index=code42 eventType=RESTORE_JOB] |
+lookup computer_lookup guid as deviceGuid |
+lookup user_lookup userUid |
+chart count over username</query>
+          <earliest>-7d@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">true</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="count">10</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">pie</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+        <title>Restore Count Timeline Last 7 Days</title>
+        <search>
+          <query>index=code42 sourcetype=c42securityevent "eventType"=RESTORE_FILE AND file.restoreSuccessful=true |
+join restoreId type=left [search index=code42 sourcetype=c42securityevent eventType=RESTORE_JOB] |
+timechart count as "Count of Files Restored" |
+join [search index=code42 sourcetype=c42securityevent earliest=-1mon "eventType"=RESTORE_FILE file.restoreSuccessful=true |
+join restoreId type=left
+[search index=code42 sourcetype=c42securityevent eventType=RESTORE_JOB] |
+eventstats count as thirty_day_count |
+eval AVG = thirty_day_count/30 |
+timechart span=2mon avg(AVG) as "MONTH AVERAGE"]</query>
+          <earliest>-7d@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">none</option>
+        <option name="charting.chart.overlayFields">"MONTH AVERAGE"</option>
+        <option name="charting.axisTitleY.text">Count</option>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+        <title>Files Restored by File Type Top 10</title>
+        <search>
+          <query>index=code42 eventType=RESTORE_FILE file.fullPath ="*.*" AND file.fullPath !="*/.*" AND file.fullPath !="*.attributes" |
+table file.fullPath |
+rex field=file.fullPath "(?&lt;fileType&gt;[^.]+)$" |
+chart count by fileType |
+sort 100 -num(count) limit=10</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">pie</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="charting.seriesColors">[4D4D4D,5DA5DA,FAA43A,60BD68,F17CB0,B2912F,B276B2,DECF3F,F15854,c2c1c2]</option>
+        <option name="charting.chart.showPercent">true</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>Files Restored Last 24 Hours</title>
+        <search>
+          <query>index=code42 eventType=RESTORE_FILE AND file.restoreSuccessful=true |
+join restoreId [search index=code42 eventType=RESTORE_JOB] |
+lookup computer_lookup guid as deviceGuid OUTPUT userUid as dataAccessUserUid |
+lookup user_lookup userUid as dataAccessUserUid OUTPUT username as "Data Access Username", userUid as "Data Access UserUid" |
+lookup computer_lookup guid as sourceGuid OUTPUT name as "Source Device Name",userUid as restoreJobSourceUserUid |
+lookup user_lookup userUid as restoreJobSourceUserUid OUTPUT username as "Source Owner Username" |
+rename file.fullPath as "Restore Full Path", file.md5 as "File MD5Hash", restoreId as "Restore Job ID" |
+table _time, "Source Device Name", "Source Owner Username", "Data Access Username", "File MD5Hash", "Restore Full Path", "Restore Job ID" |
+sort _time desc</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>Files Restored Last 7 Days</title>
+        <search>
+          <query>index=code42 eventType=RESTORE_FILE AND file.restoreSuccessful=true |
+join restoreId [search index=code42 eventType=RESTORE_JOB] |
+lookup computer_lookup guid as deviceGuid OUTPUT userUid as dataAccessUserUid |
+lookup user_lookup userUid as dataAccessUserUid OUTPUT username as "Data Access Username", userUid as "Data Access UserUid" |
+lookup computer_lookup guid as sourceGuid OUTPUT name as "Source Device Name",userUid as restoreJobSourceUserUid |
+lookup user_lookup userUid as restoreJobSourceUserUid OUTPUT username as "Source Owner Username" |
+rename file.fullPath as "Restore Full Path", file.md5 as "File MD5Hash", restoreId as "Restore Job ID" |
+table _time, "Source Device Name", "Source Owner Username", "Data Access Username", "File MD5Hash", "Restore Full Path", "Restore Job ID" |
+sort _time desc</query>
+          <earliest>-7d@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">20</option>
+      </table>
+    </panel>
+  </row>
+</dashboard>

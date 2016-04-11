@@ -1,22 +1,9 @@
-# Copyright (c) 2015 - 2016 Code42 Software, Inc.
+# File: _base.py
+# Author: Hank Brekke
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
+# Base class for performing common API actions, such as querying
+# for devices or parsing arguments.
 #
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
 
 import sys
 import abc
@@ -24,16 +11,15 @@ import argparse
 import contextlib
 import getpass
 import json
-import datetime
 import urllib
+import logging
 
 from c42SharedLibrary import c42Lib
-import _c42_csv as csv
 
-# http://stackoverflow.com/a/17603000/296794
 @contextlib.contextmanager
 def smart_open(filename=None, **kwargs):
     overwrite_file = kwargs.get('overwrite_file', False)
+    std_stream = kwargs.get('std_stream', sys.stdout)
 
     if filename and filename != '-':
         style = 'a'
@@ -41,45 +27,63 @@ def smart_open(filename=None, **kwargs):
             style = 'w'
         fh = open(filename, style)
     else:
-        fh = sys.stdout
+        fh = std_stream
 
     try:
         yield fh
     finally:
-        if fh is not sys.stdout:
+        if fh is not std_stream:
             fh.close()
 
+
 class C42Script(object):
-    logfile = None
     arg_parser = None
     args = {}
     console = None
-    csv = None
+    log = None
+
     def __init__(self):
         description = self.description()
         self.arg_parser = argparse.ArgumentParser(description=description)
         self.console = c42Lib
-        self.csv = csv
-
         self.setup_parser(self.arg_parser)
+        self._suppress_logs = False
 
-    # Public utilities
-    def log(self, string, **kwargs):
-        skip_time = kwargs.get('skip_time', False)
+    @property
+    def suppress_logs(self):
+        return self._suppress_logs
 
-        if self.logfile and len(string) == 0:
-            return
-
-        with smart_open(self.logfile) as output:
-            if self.logfile and not skip_time:
-                date = datetime.datetime.now()
-                output.write('%s %s\n' % (date.strftime("%Y-%m-%d %H:%M:%S"), string))
-            else:
-                output.write('%s\n' % string)
+    @suppress_logs.setter
+    def suppress_logs(self, value):
+        self._suppress_logs = value
+        self.log = self.create_logger()
 
     # Metadata
     def description(self):
         return "Unknown script"
+
+    def create_logger(self):
+        logger_name = type(self).__name__
+        log = logging.getLogger(logger_name)
+        try:
+            logfile = self.args.logfile
+        except AttributeError:
+            return
+
+        formatter = logging.Formatter('%(message)s')
+        if logfile:
+            handler = logging.FileHandler(logfile)
+            formatter = logging.Formatter('%(asctime)s %(levelname)s %(name)s:%(funcName)s %(message)s')
+        elif not self.suppress_logs:
+            handler = logging.StreamHandler(sys.stdout)
+        else:
+            handler = logging.StreamHandler(sys.stderr)
+
+        handler.setFormatter(formatter)
+        log.handlers = [handler]
+        log.setLevel(logging.DEBUG if (logfile or not self.suppress_logs) else logging.WARN)
+        log.propagate = False
+        return log
 
     def setup_parser(self, parser):
         parser.add_argument('-s', dest='hostname', default='https://spyder.code42.com', help='Code42 Console URL (without port)')
@@ -87,11 +91,11 @@ class C42Script(object):
         parser.add_argument('-port', dest='port', default=4285, type=int, help='Code42 Console Port')
         parser.add_argument('--no-verify', dest='verify_ssl', action='store_false', default=True, help='Disable SSL certificate verification when making HTTPS requests.')
         parser.add_argument('-p', dest='password', default='', help='Code42 Console password (replaces prompt)')
-        parser.add_argument('-log', dest='logfile', default=None, help='Logfile to print informational output messages (instead of STDOUT)')
+        parser.add_argument('-log', dest='logfile', default=None, help=argparse.SUPPRESS)
 
     # Convenience methods
     def search_orgs(self, orgName):
-        self.log(">> Querying organization information.")
+        self.log.debug(">> Querying organization information.")
 
         orgParams = {}
         orgParams['q'] = orgName
@@ -102,7 +106,7 @@ class C42Script(object):
         orgs = binary['data']['orgs']
 
         if len(orgs) == 0:
-            sys.stderr.write("ERROR: No organizations found with the name '%s'.\n" % orgName)
+            self.log.error("No organizations found with the name '%s'.", orgName)
             sys.exit(2)
 
         return orgs[0]
@@ -118,11 +122,11 @@ class C42Script(object):
             binary = json.loads(content)
 
             if isinstance(binary, list):
-                sys.stderr.write("ERROR: " + binary[0]['name'] + ": " + binary[0]['description'] + "\n")
+                self.log.error(binary[0]['name'] + ": " + binary[0]['description'])
             else:
                 queryComputers = binary['data']['computers']
                 if len(queryComputers) == 0:
-                    sys.stderr.write("ERROR: No active computers could be found in this Code42 system.\n")
+                    self.log.warn("No active computers could be found in this Code42 system.")
 
                 for computer in queryComputers:
                     if computer['service'] == type:
@@ -140,11 +144,11 @@ class C42Script(object):
                 # Querying organization information
                 orgUid = self.search_orgs(orgQuery)['orgUid']
 
-                self.log(">> Querying all computers inside organization " + orgUid + ".")
+                self.log.debug(">> Querying all computers inside organization " + orgUid + ".")
                 # Querying all computers inside organization.
                 params['orgUid'] = orgUid
             else:
-                self.log(">> Querying computers with name " + query + ".")
+                self.log.debug(">> Querying computers with name " + query + ".")
                 # Querying all computers inside organization.
                 params['q'] = query
 
@@ -154,11 +158,11 @@ class C42Script(object):
             binary = json.loads(content)
 
             if isinstance(binary, list):
-                sys.stderr.write("ERROR: " + binary[0]['name'] + ": " + binary[0]['description'] + "\n")
+                self.log.error(binary[0]['name'] + ": " + binary[0]['description'])
             else:
                 queryComputers = binary['data']['computers']
                 if len(queryComputers) == 0:
-                    sys.stderr.write("ERROR: Computer " + query + " could not be found, or is not active.\n")
+                    self.log.error("Computer " + query + " could not be found, or is not active.")
 
                 for computer in queryComputers:
                     if computer['service'] == type:
@@ -166,7 +170,7 @@ class C42Script(object):
                         if not srcGUID in computers:
                             computers.append(srcGUID)
 
-        self.log('>> Found ' + str(len(computers)) + ' devices matching queries.')
+        self.log.debug('>> Found ' + str(len(computers)) + ' devices matching queries.')
         return computers
 
     # Cache some information we can reuse throughout several `storage_server` calls.
@@ -181,7 +185,7 @@ class C42Script(object):
             raise Exception("You need a device_guid or plan_uid to authorize a storage server.")
 
         if device_guid:
-            self.log('>>> Get backup planUid from deviceGuid %s.' % device_guid)
+            self.log.debug('>>> Get backup planUid from deviceGuid %s.' % device_guid)
             # Get backup planUid from deviceGuid.
             params = {
                 'sourceComputerGuid': device_guid,
@@ -196,14 +200,17 @@ class C42Script(object):
         if not plan_uid:
             raise Exception("There are no backup planUid's for this device. Backup likely has not started, or deviceGuid is invalid.")
 
-        self.log('>>> Get storage locations for planUid %s.' % plan_uid)
+        self.log.debug('>>> Get storage locations for planUid %s.' % plan_uid)
         # Get Storage locations for planUid.
         r = self.console.executeRequest("get", "%s/%s" % (self.console.cp_api_storage, plan_uid), {}, {})
         storage_destinations_response = json.loads(r.content.decode("UTF-8"))
         storage_destinations = storage_destinations_response['data'] if 'data' in storage_destinations_response else None
 
+        if len(storage_destinations) == 0:
+            raise Exception("There is no storage location for this device archive. Backup has likely not started.")
+
         if not self.__all_destinations:
-            self.log('>>> Get information about all storage destinations.')
+            self.log.debug('>>> Get information about all storage destinations.')
             # Get information about all storage destinations.
             r = self.console.executeRequest("get", self.console.cp_api_destination, {}, {})
             all_destinations_response = json.loads(r.content.decode("UTF-8"))
@@ -211,7 +218,7 @@ class C42Script(object):
         all_destinations = self.__all_destinations
 
         if not self.__all_servers:
-            self.log('>>> Get information about all storage servers.')
+            self.log.debug('>>> Get information about all storage servers.')
             # Get information about all storage servers.
             r = self.console.executeRequest("get", self.console.cp_api_server, {}, {})
             all_servers_response = json.loads(r.content.decode("UTF-8"))
@@ -225,13 +232,13 @@ class C42Script(object):
             if server_full and server_full['type'] == 'SERVER':
                 # No special authorization is required for MASTER servers.
 
-                self.log(">>> Private MASTER server authorization complete.")
+                self.log.debug(">>> Private MASTER server authorization complete.")
                 # Private MASTER server authorization complete.
                 break
             else:
                 # Storage is on a separate server, and we need to authorize against it.
 
-                self.log(">>> Checking connection URL accuracy for storage server.")
+                self.log.debug(">>> Checking connection URL accuracy for storage server.")
                 # Checking connection URL accuracy for storage server.
                 payload = {
                     "planUid": str(plan_uid),
@@ -251,17 +258,17 @@ class C42Script(object):
                 self.console.cp_port = storage_port
 
                 if destination['type'] == 'PROVIDER':
-                    self.log(">>> Authorizing for a PROVIDER server (Code42 Hybrid Cloud, etc. not owned by the master server).")
+                    self.log.debug(">>> Authorizing for a PROVIDER server (Code42 Hybrid Cloud, etc. not owned by the master server).")
                     # Authorizing for a PROVIDER server (Code42 Hybrid Cloud, etc. not owned by the master server).
                     c42Lib.cp_authorization = "LOGIN_TOKEN %s" % storage_singleUseToken
                     r = c42Lib.executeRequest("post", c42Lib.cp_api_authToken, {}, {})
                     storage_authToken_response = json.loads(r.content.decode("UTF-8"))
 
                     c42Lib.cp_authorization = "TOKEN %s-%s" % (storage_authToken_response['data'][0], storage_authToken_response['data'][1])
-                    self.log(">>> Shared PROVIDER server authorization complete.")
+                    self.log.debug(">>> Shared PROVIDER server authorization complete.")
                     # Shared PROVIDER server authorization complete.
                 else:
-                    self.log(">>> Private STORAGE server authorization complete.")
+                    self.log.debug(">>> Private STORAGE server authorization complete.")
                     # Private STORAGE server authorization complete.
 
                 break
@@ -278,9 +285,7 @@ class C42Script(object):
         if not self.args:
             self.args = self.arg_parser.parse_args()
 
-        if self.args.logfile and not self.logfile:
-            self.logfile = self.args.logfile
-            self.log('------------------------------------------', skip_time=True)
+        self.log = self.create_logger()
 
         if len(self.args.hostname) > 0 and not self.args.hostname.startswith('http'):
           # Try and figure out a protocol for this hostname
@@ -291,17 +296,17 @@ class C42Script(object):
             self.args.hostname = "http://%s" % self.args.hostname
 
     def end(self):
-        self.log('')
+        self.log.debug('')
 
     def outline(self):
         if ((self.args.hostname.startswith('https:') and self.args.port == 443) or
             (self.args.hostname.startswith('http:') and self.args.port == 80) or
             self.args.port <= 0):
             # Don't display the port if it's the default port for that protocol (443 or 80)
-            self.log('> API URL:\t' + self.args.hostname)
+            self.log.debug('> API URL:\t' + self.args.hostname)
         else:
-            self.log('> API URL:\t' + self.args.hostname + ':' + str(self.args.port))
-        self.log('> Console User:\t' + self.args.username)
+            self.log.debug('> API URL:\t' + self.args.hostname + ':' + str(self.args.port))
+        self.log.debug('> Console User:\t' + self.args.username)
 
     def prepare(self):
         self.console.cp_host = self.args.hostname
@@ -315,7 +320,7 @@ class C42Script(object):
         else:
             self.args.password = getpass.getpass("Code42 Console Password [" + self.console.cp_username + "]: ")
             self.console.cp_password = self.args.password
-            self.log('')
+            self.log.debug('')
 
     @abc.abstractmethod
     def main(self):
@@ -324,9 +329,9 @@ class C42Script(object):
     def run(self):
         self.start()
 
-        self.log('')
+        self.log.debug('')
         self.outline()
-        self.log('')
+        self.log.debug('')
 
         self.prepare()
 

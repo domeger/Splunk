@@ -1,23 +1,50 @@
 [
   {
     "protocol": "script",
-    "path": [ ".", "bin", "splunk-userWrapper.py" ],
+    "path": [ ".", "bin", "c42splunk", "splunk_computers.py" ],
     "settings": {
       "interval": "86400",
-      "index": "code42",
-      "sourcetype": "c42userevent",
       "passAuth": "splunk-system-user",
       "disabled": "0"
     }
   },
   {
     "protocol": "script",
-    "path": [ ".", "bin", "splunk-computerWrapper.py" ],
+    "path": [ ".", "bin", "c42splunk", "splunk_users.py" ],
+    "settings": {
+      "interval": "86400",
+      "passAuth": "splunk-system-user",
+      "disabled": "0"
+    }
+  },
+  {
+    "protocol": "script",
+    "path": [ ".", "bin", "c42splunk", "splunk_backup_usage.py" ],
+    "settings": {
+      "interval": "14400",
+      "index": "code42",
+      "sourcetype": "c42backupusage",
+      "passAuth": "splunk-system-user",
+      "disabled": "0"
+    }
+  },
+  {
+    "protocol": "script",
+    "path": [ ".", "bin", "c42splunk", "splunk_security_event_restore.py" ],
     "settings": {
       "interval": "86400",
       "index": "code42",
-      "sourcetype": "c42computerevent",
+      "sourcetype": "c42securityevent",
       "passAuth": "splunk-system-user",
+      "disabled": "0"
+    }
+  },
+  {
+    "protocol": "monitor",
+    "path": [ "$SPLUNK_HOME", "etc", "apps", "code42", "log", "code42.log" ],
+    "settings": {
+      "index": "code42",
+      "sourcetype": "c42log",
       "disabled": "0"
     }
   }

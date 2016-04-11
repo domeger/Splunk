@@ -1,0 +1,278 @@
+<form>
+  <label>Code42 Security Dashboard</label>
+  <description>Enterprise data security &amp; protection events from client computers.</description>
+  <fieldset autoRun="true" submitButton="false">
+    <input type="dropdown" token="useruid_tok" searchWhenChanged="true">
+      <label>Select a Username:</label>
+      <default>*</default>
+      <choice value="*">All Users</choice>
+      <search>
+        <query>| inputlookup user_lookup | dedup username sortby -modificationDate | table username, userUid</query>
+      </search>
+      <fieldForLabel>username</fieldForLabel>
+      <fieldForValue>userUid</fieldForValue>
+      <change>
+        <set token="my_label">$label$</set>
+        <set token="my_value">$value$</set>
+      </change>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <table>
+        <title>Removable Media &amp; Cloud Event Matrix</title>
+        <search>
+          <query>index=code42 sourcetype=c42securityevent (eventType="DEVICE_*APP*" OR ((eventType=DEVICE_FILE_ACTIVITY OR eventType=PERSONAL_CLOUD_FILE_ACTIVITY) AND file.md5!=ffffffffffffffffffffffffffffffff)) |
+lookup computer_lookup guid as deviceGuid |
+search userUid=$useruid_tok$ |
+rename guid as deviceGuid, name as "Device Name" ,username as Username, orgName as "C42 Org Name", eventType as "Event Category", file.fileEventType as "Event Category Details", deviceGuid as "Device GUID",cloudStorageProvider.productName as "Cloud Service",file.fileName as "Filename", detectionDevice.busType as "Removable Media Event Details" |
+table _time,"Device Name",Username,"C42 Org Name","Event Category","Event Category Details","Cloud Service","Removable Media Event Details","Device GUID","Filename" |
+convert ctime("Event Date") |
+sort _time desc</query>
+          <earliest>0</earliest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="drilldown">cell</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="count">5</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>Restore Forensics Event Matrix</title>
+        <search>
+          <query>index=code42 eventType=RESTORE_FILE AND file.restoreSuccessful=true |
+join restoreId [search index=code42 eventType=RESTORE_JOB] |
+lookup computer_lookup guid as deviceGuid OUTPUT userUid as dataAccessUserUid |
+lookup user_lookup userUid as dataAccessUserUid OUTPUT username as "Data Access Username", userUid as "Data Access UserUid" |
+lookup computer_lookup guid as sourceGuid OUTPUT name as "Source Device Name",userUid as restoreJobSourceUserUid |
+lookup user_lookup userUid as restoreJobSourceUserUid OUTPUT username as "Source Owner Username", userUid as "Source Owner UserUid" |
+search ("Source Owner UserUid"=$useruid_tok$ OR "Data Access UserUid"=$useruid_tok$) |
+rename file.fullPath as "Restore Full Path" |
+table _time, "Source Device Name", "Source Owner Username", "Data Access Username", "Restore Full Path" |
+sort _time desc</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">5</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart>
+        <title>Client Event Types</title>
+        <search>
+          <query>index=code42 sourcetype=c42securityevent |
+lookup computer_lookup guid as deviceGuid |
+search userUid=$useruid_tok$ |
+top limit=20 eventType</query>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">pie</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="mapping.data.maxClusters">100</option>
+        <option name="mapping.map.center">(0,0)</option>
+        <option name="mapping.map.zoom">2</option>
+        <option name="mapping.markerLayer.markerMaxSize">50</option>
+        <option name="mapping.markerLayer.markerMinSize">10</option>
+        <option name="mapping.markerLayer.markerOpacity">0.8</option>
+        <option name="mapping.tileLayer.maxZoom">7</option>
+        <option name="mapping.tileLayer.minZoom">0</option>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="list.drilldown">full</option>
+        <option name="list.wrap">1</option>
+        <option name="maxLines">5</option>
+        <option name="raw.drilldown">full</option>
+        <option name="table.drilldown">all</option>
+        <option name="table.wrap">1</option>
+        <option name="type">list</option>
+        <option name="count">10</option>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+        <title>Removable Media &amp; Cloud Provider Events</title>
+        <search>
+          <query>index=code42 sourcetype=c42securityevent (eventType="DEVICE_FILE_ACTIVITY" OR eventType="PERSONAL_CLOUD_FILE_ACTIVITY") |
+rename file.fileEventType as fileEventType |
+lookup computer_lookup guid as deviceGuid |
+search userUid=$useruid_tok$ |
+chart count(eval(fileEventType="MODIFY")) as "Modify" count(eval(fileEventType="CREATE")) as "Create" count(eval(fileEventType="DELETE")) as "Delete" by fileEventType</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="charting.axisTitleX.text">Event Type</option>
+        <option name="charting.axisTitleY.text">Event Count</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart>
+        <title>Cloud Storage Providers Installed</title>
+        <search>
+          <query>index=code42 sourcetype=c42securityevent |
+search eventType="PERSONAL_CLOUD_FILE_ACTIVITY" |
+lookup computer_lookup guid as deviceGuid |
+search userUid=$useruid_tok$ |
+stats dc(deviceGuid) by cloudStorageProvider.productName</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">none</option>
+        <option name="charting.axisTitleX.text">Cloud Storage Provider Name</option>
+        <option name="charting.axisTitleY.text">Count</option>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+        <title>Code42 User Account Types</title>
+        <search>
+          <query>| inputlookup user_lookup |
+dedup userUid sortby -modificationDate |
+search userUid=$useruid_tok$ |
+spath input=roles |
+eval role=if(searchmatch("{}=SYSADMIN"), "Admin", "User") |
+top limit=2 role</query>
+          <earliest>0</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.fieldColors">{"Dopbox": 0xFF0000, "Box": 0xFF9900, "Google Drive":0x009900}</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>Web Browser File Open Event Matrix</title>
+        <search>
+          <query>index=code42 sourcetype=c42securityevent eventType=FILE_OPENED |
+lookup computer_lookup guid as deviceGuid |
+search userUid=$useruid_tok$ |
+rename guid as deviceGuid, name as "Device Name", username as Username, orgName as "C42 Org Name", processName as "Process Name", deviceGuid as "Device GUID",file.fileName as "Filename" |
+table _time,"Device Name",Username,"C42 Org Name","Process Name","Device GUID","Filename" |
+convert ctime("Event Date") |
+sort _time desc</query>
+          <earliest>0</earliest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="drilldown">cell</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="count">5</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>Pattern Matching Event Matrix</title>
+        <search>
+          <query>index=code42 sourcetype=c42securityevent eventType=RULE_MATCH file.md5!=ffffffffffffffffffffffffffffffff |
+lookup computer_lookup guid as deviceGuid |
+search userUid=$useruid_tok$ |
+rename guid as deviceGuid, name as "Device Name", username as Username, orgName as "C42 Org Name", ruleName as "YARA Rule Name", deviceGuid as "Device GUID",file.fileName as "Filename" |
+table _time,"Device Name",Username,"C42 Org Name","YARA Rule Name","Device GUID","Filename" |
+convert ctime("Event Date") |
+sort _time desc</query>
+          <earliest>0</earliest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="drilldown">cell</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="count">5</option>
+      </table>
+    </panel>
+  </row>
+</form>
