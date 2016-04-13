@@ -25,6 +25,7 @@
           <query>index=code42 sourcetype=c42securityevent (eventType="DEVICE_*APP*" OR ((eventType=DEVICE_FILE_ACTIVITY OR eventType=PERSONAL_CLOUD_FILE_ACTIVITY) AND file.md5!=ffffffffffffffffffffffffffffffff)) |
 lookup computer_lookup guid as deviceGuid |
 search userUid=$useruid_tok$ |
+lookup user_lookup userUid |
 rename guid as deviceGuid, name as "Device Name" ,username as Username, orgName as "C42 Org Name", eventType as "Event Category", file.fileEventType as "Event Category Details", deviceGuid as "Device GUID",cloudStorageProvider.productName as "Cloud Service",file.fileName as "Filename", detectionDevice.busType as "Removable Media Event Details" |
 table _time,"Device Name",Username,"C42 Org Name","Event Category","Event Category Details","Cloud Service","Removable Media Event Details","Device GUID","Filename" |
 convert ctime("Event Date") |
@@ -239,6 +240,7 @@ top limit=2 role</query>
           <query>index=code42 sourcetype=c42securityevent eventType=FILE_OPENED |
 lookup computer_lookup guid as deviceGuid |
 search userUid=$useruid_tok$ |
+lookup user_lookup userUid |
 rename guid as deviceGuid, name as "Device Name", username as Username, orgName as "C42 Org Name", processName as "Process Name", deviceGuid as "Device GUID",file.fileName as "Filename" |
 table _time,"Device Name",Username,"C42 Org Name","Process Name","Device GUID","Filename" |
 convert ctime("Event Date") |
@@ -261,6 +263,7 @@ sort _time desc</query>
           <query>index=code42 sourcetype=c42securityevent eventType=RULE_MATCH file.md5!=ffffffffffffffffffffffffffffffff |
 lookup computer_lookup guid as deviceGuid |
 search userUid=$useruid_tok$ |
+lookup user_lookup userUid |
 rename guid as deviceGuid, name as "Device Name", username as Username, orgName as "C42 Org Name", ruleName as "YARA Rule Name", deviceGuid as "Device GUID",file.fileName as "Filename" |
 table _time,"Device Name",Username,"C42 Org Name","YARA Rule Name","Device GUID","Filename" |
 convert ctime("Event Date") |

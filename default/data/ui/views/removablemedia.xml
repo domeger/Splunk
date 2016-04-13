@@ -230,8 +230,8 @@ sort sum("File Size") desc limit=10</query>
         <search>
           <query>index=code42 sourcetype=c42securityevent "eventType"=DEVICE_FILE_ACTIVITY "file.fileEventType"!=scan file.md5!=ffffffffffffffffffffffffffffffff |
 lookup computer_lookup guid as deviceGuid |
-lookup user_lookup userUid |
 search userUid=$useruid_tok$ |
+lookup user_lookup userUid |
 rename file.lastModified as file_lastModified |
 eval file_lastModified=file_lastModified / 1000 |
 rename detectionDevice.busType as "Media Type",detectionDevice.serialNumber as "Serial Number",name as "Device Name",username as Username,orgName as "C42 Org Name",file.fileEventType as "File Event Type",file.fileName as Filename,file.md5 as "File MD5Hash",file.length as "Filesize in Bytes",file_lastModified as "File Last Modified" |
@@ -256,8 +256,8 @@ sort _time desc</query>
         <search>
           <query>index=code42 sourcetype=c42securityevent "eventType"=DEVICE_FILE_ACTIVITY "file.fileEventType"!=scan file.md5!=ffffffffffffffffffffffffffffffff  |
 lookup computer_lookup guid as deviceGuid |
-lookup user_lookup userUid |
 search userUid=$useruid_tok$ |
+lookup user_lookup userUid |
 rename file.lastModified as file_lastModified |
 eval file_lastModified=file_lastModified / 1000 |
 rename detectionDevice.busType as "Media Type",detectionDevice.serialNumber as "Serial Number", name as "Device Name",username as Username,orgName as "C42 Org Name",file.fileEventType as "File Event Type",file.fileName as Filename,file.md5 as "File MD5Hash",file.length as "Filesize in Bytes",file_lastModified as "File Last Modified" |
