@@ -26,7 +26,7 @@ associated with a single device guid.
 
 import itertools
 import urlparse
-from requests import HTTPError
+import requests
 
 from c42api.common import resources
 from c42api.common.server import Server
@@ -102,23 +102,16 @@ def _request_auth_token(server, login_token):
         return None
 
 
-def _network_test(authority, address):
+def _network_ping(node_url, **kwargs):
     """
-    Sends a network test request to the authority.
+    Sends a network ping request to a URL.
 
-    :raise HTTPError: If the request fails
-    :param authority: The Server object that points to the authority
-    :param address:   The private address the authority should verify exists
-    :return:          Whether or not the network test succeeded
+    :raise HTTPError: If the verification fails
+    :param node_url:  The address address to be verified
     """
-    payload = {'testType': 'reachable',
-              'address': address,
-              'privateAddress': True}
-    response = authority.json_from_response(authority.post(resources.NETWORK_TEST, payload=payload))
-    try:
-        return response['data']['reachable']
-    except KeyError:
-        return None
+    ping_url = "{0}/api/ping".format(node_url)
+    response = requests.get(ping_url, timeout=8, **kwargs)
+    response.raise_for_status()
 
 
 def _grouped_dict_by_key(list_of_dict, key):
@@ -196,7 +189,7 @@ def _server_object_for_destination(authority, plan_uid, destination_guid, storag
             result_server = Server(url.hostname, url.port, protocol=url.scheme,
                                    verify_ssl=authority.verify_ssl)
             auth_token = _request_auth_token(result_server, login_token)
-        except HTTPError:
+        except requests.HTTPError:
             LOG.debug("Failed to auth with location")
             return None
 
@@ -208,14 +201,12 @@ def _server_object_for_destination(authority, plan_uid, destination_guid, storag
     node_url = storage_dict['url']
     try:
         # network test resource only wants hostname, no scheme or port
-        hostname = node_url.split(":")[1][2:]
-        if not _network_test(authority, hostname):
-            LOG.debug("Network test determined location unreachable")
+        LOG.debug("Determining reachability for server {0}".format(node_url))
+        _network_ping(node_url, verify=authority.verify_ssl)
+    except requests.HTTPError:
+        # The server ping was not successful
+        LOG.debug("Network ping determined location unreachable")
         return None
-    except HTTPError:
-        # The server doesn't seem to have this resource
-        LOG.warn("Network test failed so we will assume location is reachable")
-        pass
 
     destinations_by_guid = _grouped_dict_by_key(_fetch_all_destinations(authority), 'guid')
     target_destination = destinations_by_guid[destination_guid][0]
