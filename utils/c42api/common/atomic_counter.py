@@ -18,29 +18,37 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-"""Code42 Django web app controllers and templates."""
+"""
+Count things....atomically
+"""
 
-import sys
-import os
+from threading import Lock
 
-SPLUNK_HOME = os.environ.get('SPLUNK_HOME')
-APP_HOME = os.path.join(SPLUNK_HOME, 'etc', 'apps', 'code42')
-WHEEL_DIR = os.path.join(APP_HOME, 'utils', 'wheels')
 
-sys.path.insert(0, os.path.join(APP_HOME, 'bin'))
-sys.path.insert(0, os.path.join(APP_HOME, 'utils'))
-
-def add_wheel(wheel_name):
+class AtomicCounter(object):
     """
-    Adds a wheel to the python path
+    Atomically Count things
     """
-    sys.path.insert(0, os.path.join(WHEEL_DIR, wheel_name))
+    def __init__(self, count):
+        self._lock = Lock()
+        self._count = count
 
-WHEELS = [
-    'six-1.9.0-py2.py3-none-any.whl',
-    'python_dateutil-2.4.2-py2.py3-none-any.whl',
-    'requests-2.7.0-py2.py3-none-any.whl',
-]
+    def set(self, value):
+        """Read the function name"""
+        with self._lock:
+            self._count = value
 
-# pylint: disable=bad-builtin
-map(add_wheel, WHEELS)
+    def decrement(self):
+        """Read the function name"""
+        with self._lock:
+            self._count = self._count - 1
+
+    def increment(self):
+        """Read the function name"""
+        with self._lock:
+            self._count = self._count + 1
+
+    def get(self):
+        """Read the function name"""
+        with self._lock:
+            return self._count

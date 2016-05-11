@@ -31,8 +31,6 @@ import datetime
 import calendar
 import re
 
-
-
 class c42Lib(object):
 
     # Set to your environments values
@@ -46,19 +44,26 @@ class c42Lib(object):
     #cp_port = "4280"
     #cp_username = "admin"
     #cp_password = "admin"
+    cp_magic_restoreRecordKey = '987db1c5-8840-41f1-8c97-460d03347895'
 
     # REST API Calls
-    cp_api_ping = "/api/Ping"
-    cp_api_storage = "/api/Storage"
-    cp_api_destination = "/api/Destination"
     cp_api_authToken = "/api/AuthToken"
     cp_api_storageAuthToken = "/api/StorageAuthToken"
+    cp_api_loginToken = "/api/LoginToken"
+    cp_api_networkTest = "/api/NetworkTest"
+    cp_api_plan = "/api/Plan"
+    cp_api_fileContent = "/api/FileContent"
+    cp_api_fileMetadata = "/api/FileMetadata"
+    cp_api_storage = "/api/Storage"
+    cp_api_ping = "/api/Ping"
     cp_api_userRole = "/api/UserRole"
     cp_api_user = "/api/User"
     cp_api_org = "/api/Org"
+    cp_api_orgSettings = "/api/OrgSettings"
     cp_api_archive = "/api/Archive"
     cp_api_deviceUpgrade = "/api/DeviceUpgrade"
     cp_api_computer = "/api/Computer"
+    cp_api_destination = "/api/Destination"
     cp_api_computerBlock = "/api/ComputerBlock"
     cp_api_userMoveProcess = "/api/UserMoveProcess"
     cp_api_deactivateUser = "/api/UserDeactivation"
@@ -75,6 +80,7 @@ class c42Lib(object):
     cp_api_pushRestoreJob = "/api/PushRestoreJob"
     cp_api_webRestoreSearch = "/api/WebRestoreSearch"
     cp_api_webRestoreJob = "/api/WebRestoreJob"
+    cp_api_webRestoreTreeNode = "/api/WebRestoreTreeNode"
     cp_api_webRestoreJobResult = "/api/WebRestoreJobResult"
 
     cp_api_plan = "/api/Plan"
@@ -90,16 +96,30 @@ class c42Lib(object):
     #
     # getRequestHeaders:
     # Returns the dictionary object containing headers to pass along with all requests to the API,
-    # Params: None
-    # Uses global / class variables for username and password authentication
+    #
+    # Params:
+    # login_token (kwargs): use login_token
+    # auth_token (kwargs): use auth token
+    #
+    # Uses global / class variables for username and password authentication if 'auth_token' or 'login_token'
+    # are not passed in as type
     #
     @staticmethod
-    def getRequestHeaders():
+    def getRequestHeaders(**kwargs):
         header = {}
-        header["Authorization"] = c42Lib.getAuthHeader(c42Lib.cp_username,c42Lib.cp_password) if not c42Lib.cp_authorization else c42Lib.cp_authorization
+
+        if not c42Lib.cp_authorization:
+            if kwargs and 'login_token' in kwargs:
+                header["Authorization"] = "login_token {0}".format(kwargs['login_token'])
+            elif kwargs and 'auth_token' in kwargs:
+                header["Authorization"] = "token {0}".format(kwargs['auth_token'])
+            else:
+                header["Authorization"] = c42Lib.getAuthHeader(c42Lib.cp_username,c42Lib.cp_password)
+        else:
+            header['Authorization'] = c42Lib.cp_authorization
+
         header["Content-Type"] = "application/json"
 
-        # print header
         return header
 
     #
@@ -107,14 +127,29 @@ class c42Lib(object):
     # Returns the full URL to execute an API call,
     # Params:
     # cp_api: what the context root will be following the host and port (global / class variables)
+    # host (kwargs): host address to use when building request url. Uses global / class variables by default
+    # port (kwargs): port to use when bulding request url. Uses global / class variables by default
     #
-
     @staticmethod
-    def getRequestUrl(cp_api):
-        if c42Lib.cp_port  == '':           # Some customers have port forwarding and adding a port breaks the API calls
-            url = c42Lib.cp_host + cp_api
+    def getRequestUrl(cp_api, **kwargs):
+        host = ''
+        port = ''
+
+        if kwargs and 'host' in kwargs:
+            host = kwargs['host']
         else:
-            url = c42Lib.cp_host + ":" + c42Lib.cp_port + cp_api
+            host = c42Lib.cp_host
+
+        if kwargs and 'port' in kwargs:
+            port = str(kwargs['port'])
+        else:
+            port = c42Lib.cp_port
+
+
+        if port == '':           # Some customers have port forwarding and adding a port breaks the API calls
+            url = host+ cp_api
+        else:
+            url = host + ":" + str(port) + cp_api
 
         return url
 
@@ -126,17 +161,23 @@ class c42Lib(object):
     # cp_api: the context root to be appended after server:port when generating the URL
     # params: URL parameters to be passed along with the request
     # payload: json object to be sent in the body of the request
+    # host (kwargs): host address to target request at. Uses global / class variables by default
+    # port (kwargs): port to target request at. Uses global / class variables by default
+    # auth_token (kwargs): auth type to use. Uses basic auth with global username and password by default
+    # login_token (kwargs): token to use based on auth type. Unused by default.
+
     # Returns: the response object directly from the call to be parsed by other methods
     #
 
     @staticmethod
-    def executeRequest(type, cp_api, params, payload):
-        # logging.debug
-        header = c42Lib.getRequestHeaders()
-        # print header
-        url = c42Lib.getRequestUrl(cp_api)
-        # url = cp_host + ":" + cp_port + cp_api
-        # payload = cp_payload
+    def executeRequest(type, cp_api, params={}, payload={}, **kwargs):
+        header = c42Lib.getRequestHeaders(**kwargs)
+        url = c42Lib.getRequestUrl(cp_api, **kwargs)
+
+        # for our purposes, we always want this set for fileContent requests so that a restore record
+        # is not stamped out on the server
+        if cp_api == c42Lib.cp_api_fileContent:
+            assert 'restoreRecordKey' in params and params['restoreRecordKey'] is cp_magic_restoreRecordKey
 
         if type == "get":
             logging.debug("Payload : " + str(payload))
@@ -152,16 +193,268 @@ class c42Lib(object):
             logging.debug(r.text)
             return r
         elif type == "put":
-            # logging.debug(str(json.dumps(payload)))
             r = requests.put(url, params=params, data=json.dumps(payload), headers=header, verify=c42Lib.cp_verify_ssl)
             logging.debug(r.text)
             return r
         else:
             return None
 
-        # content = r.content
-        # binary = json.loads(content)
-        # logging.debug(binary)
+    #
+    # Params:
+    # private address: address to check if reachbale
+    # Returns: Check if address is reachable. None on failure
+    #
+    @staticmethod
+    def reachableNetworkTest(private_address, **kwargs):
+        payload = {
+            "testType":"reachable",
+            "address":private_address,
+            "privateAddress":True
+        }
+
+        r = c42Lib.executeRequest("post", c42Lib.cp_api_networkTest, {}, payload, **kwargs)
+        contents = r.content.decode("UTF-8")
+        binary = json.loads(contents)
+        return binary['data'] if 'data' in binary else None
+
+    #
+    # Params:
+    # host (kwargs): host location to use
+    # port (kwargs): port to use
+    # login_token (kwargs): necessary for storage nodes
+    # Returns: Auth token. None on failure
+    #
+    @staticmethod
+    def requestAuthToken(**kwargs):
+        payload = {
+            "sendCookieHeader":True
+        }
+        r = c42Lib.executeRequest("post", c42Lib.cp_api_authToken, {}, payload, **kwargs)
+        if r.status_code != 200:
+            logging.debug("Failed to get auth token")
+            return None
+
+        return "-".join(json.loads(r.content.decode("UTF-8"))['data'])
+
+    #
+    # Params:
+    # computer_Guid: guid to get datakey for
+    # host (kwargs): host location to use
+    # port (kwargs): port to use
+    # auth_token (kwargs): auth_token to use
+    # Returns: Datakey. None on failure
+    #
+    @staticmethod
+    def getDataKeyToken(computerGuid, **kwargs):
+        params = {}
+        payload = {'computerGuid': computerGuid}
+        r = c42Lib.executeRequest("post", c42Lib.cp_api_dataKeyToken, params, payload, **kwargs)
+        binary = json.loads(r.content.decode('UTF-8'))
+        return binary['data']['dataKeyToken'] if 'data' in binary else None
+
+    #
+    # Params:
+    # computer_Guid: guid to start a session for
+    # datakeytoken: data key token to use
+    # host (kwargs): host location to use
+    # port (kwargs): port to use
+    # auth_token (kwargs): auth_token to use
+    # Returns: Session information. None on failure
+    #
+    @staticmethod
+    def startWebRestoreSession(computerGuid, dataKeyToken, **kwargs):
+        payload = {
+            "computerGuid":computerGuid,
+            "dataKeyToken":dataKeyToken
+        }
+        r = c42Lib.executeRequest("post", c42Lib.cp_api_webRestoreSession, {}, payload, **kwargs)
+        if r.status_code != 200:
+            logging.debug("Failed to get web restore session")
+
+            return None
+
+        return json.loads(r.content.decode("UTF-8"))['data']
+
+    #
+    # Params:
+    # session_id: sessionId to use for search
+    # guid: guid to use for search
+    # timestamp: timestamp to use for search
+    # regex: regex to search for
+    # host (kwargs): host location to use
+    # port (kwargs): port to use
+    # auth_token (kwargs): auth_token to use
+    # Returns: Search results. None on failure
+    #
+    @staticmethod
+    def requestWebRestoreSearch(session_id, guid, timestamp, regex, **kwargs):
+        params = {}
+        params['webRestoreSessionId'] = session_id
+        params['guid'] = guid
+        params['timestamp'] = timestamp
+        params['regex'] = regex
+        payload = {}
+        r = c42Lib.executeRequest("get", c42Lib.cp_api_webRestoreSearch, params, payload, **kwargs)
+        binary = json.loads(r.content.decode('UTF-8'))
+        return binary['data'] if 'data' in binary else None
+
+    #
+    # Params:
+    # planUid: plan to get auth token for
+    # destinationGuid: destination to get auth token for
+    # Returns: Storage auth token on success, None on failure
+    #
+    @staticmethod
+    def requestStorageAuthToken(planUid, destinationGuid, **kwargs):
+        payload = {
+            "planUid":planUid,
+            "destinationGuid":destinationGuid
+        }
+
+        r = c42Lib.executeRequest("post", c42Lib.cp_api_storageAuthToken, {}, payload, **kwargs)
+        if r.status_code != 200:
+            logging.debug("Failed to get storage auth token")
+            return None
+
+        return json.loads(r.content.decode("UTF-8"))['data']
+
+    #
+    # Params:
+    # planUid: planUid to download from
+    # filepath: path to download
+    # host (kwargs): host location to use
+    # port (kwargs): port to use
+    # auth_token (kwargs): auth_token to use
+    # Returns: File content. None on failure
+    #
+    @staticmethod
+    def getFileContentByFilePath(planUid, filepath, **kwargs):
+        params = {}
+        params['path'] = filepath
+        params['restoreRecordKey'] = c42Lib.cp_magic_restoreRecordKey
+        params['zipFolderContents'] = True
+        r = c42Lib.executeRequest("get", c42Lib.cp_api_fileContent + "/" + planUid, params, {}, **kwargs)
+        if r.status_code != 200:
+            return None
+        return r.content
+
+
+    #
+    # Params:
+    # planUid: planUid to metadata from
+    # filepath: path to get metadata for
+    # host (kwargs): host location to use
+    # port (kwargs): port to use
+    # auth_token (kwargs): auth_token to use
+    # Returns: File content. None on failure
+    #
+    @staticmethod
+    def getFileMetadataByFilePath(planUid, filepath, **kwargs):
+        params = {}
+        params['path'] = filepath
+        r = c42Lib.executeRequest("get", c42Lib.cp_api_fileMetadata + "/" + planUid, params, {}, **kwargs)
+        if r.status_code != 200:
+            return None
+        return r.content
+
+
+    #
+    # Params:
+    # planUid: planUid to download from
+    # fileid: fileId to download
+    # host (kwargs): host location to use
+    # port (kwargs): port to use
+    # auth_token (kwargs): auth_token to use
+    # Returns: File content. None on failure
+    #
+    @staticmethod
+    def getFileContentByFileId(planUid, file_id, **kwargs):
+        params = {}
+        params['restoreRecordKey'] = c42Lib.cp_magic_restoreRecordKey
+        params['zipFolderContents'] = True
+        r = c42Lib.executeRequest("get", c42Lib.cp_api_fileContent + "/" + planUid + "/" + file_id, params, {}, **kwargs)
+        if r.status_code != 200:
+            return None
+        return r.content
+
+         #
+    # Params:
+    # planUid: planUid to metadata from
+    # fileid: fileId to get metadata for
+    # host (kwargs): host location to use
+    # port (kwargs): port to use
+    # auth_token (kwargs): auth_token to use
+    # Returns: File content. None on failure
+    #
+    @staticmethod
+    def getFileMetadataByFileId(planUid, file_id, **kwargs):
+        r = c42Lib.executeRequest("get", c42Lib.cp_api_fileMetadata + "/" + planUid + "/" + file_id, {}, {}, **kwargs)
+        binary = json.loads(r.content.decode("UTF-8"))
+        if 'data' in binary:
+            return binary['data']
+        else:
+            return None
+
+
+
+
+    #
+    # Params:
+    # sourceComputerGuid: guid to get backup plans for
+    # host (kwargs): host location to use
+    # port (kwargs): port to use
+    # auth_token (kwargs): auth_token to use
+    # Returns: Backup plans for guid located at host:port. None on failure
+    #
+    @staticmethod
+    def getBackupPlans(sourceComputerGUID, **kwargs):
+        params = {
+            "sourceComputerGuid":sourceComputerGUID,
+            "planTypes":"BACKUP"
+        }
+        r = c42Lib.executeRequest("get", c42Lib.cp_api_plan, params, {}, **kwargs)
+        binary = json.loads(r.content.decode("UTF-8"))
+        if 'data' in binary:
+            return binary['data']
+        else:
+            return None
+
+    #
+    #  Params:
+    #  planUid: planUid to get storage information about
+    #  Returns: storage information based on passed in planUid or None on failure
+    #
+    @staticmethod
+    def getStorageInformationByPlanUid(planUid, **kwargs):
+        r = c42Lib.executeRequest("get", c42Lib.cp_api_storage +"/"+planUid, {}, {}, **kwargs)
+        binary = json.loads(r.content.decode("UTF-8"))
+        if 'data' in binary:
+            return binary['data']
+        else:
+            return None
+
+    #
+    #  Returns: destinations know by server or None on failure
+    #
+    @staticmethod
+    def getDestinations(**kwargs):
+        logging.info("getDestinations")
+        r = c42Lib.executeRequest("get", c42Lib.cp_api_destination, {}, {}, **kwargs)
+        logging.debug(r.text)
+        content = r.content.decode("UTF-8")
+        binary = json.loads(content)
+        return binary['data']['destinations'] if 'data' in binary else None
+
+    @staticmethod
+    def getServersByDestinationId(destinationId, **kwargs):
+        logging.info("getServers({0})".format(destinationId))
+        params = {}
+        params['destinationId'] = destinationId
+        r = c42Lib.executeRequest("get", c42Lib.cp_api_server, params, {}, **kwargs)
+        logging.debug(r.text)
+        content = r.content.decode("UTF-8")
+        binary = json.loads(content)
+        return binary['data']['servers'] if 'data' in binary else None
 
 
     #
@@ -230,6 +523,13 @@ class c42Lib(object):
             user = None # Returns null if nothing
 
         return user
+
+    @staticmethod
+    def getRestoreRecordByRestoreJobID(restoreId):
+        r = c42Lib.executeRequest("get", c42Lib.cp_api_restoreRecord + "/" + str(restoreId), {}, {})
+        content = r.content.decode("UTF-8")
+        binary = json.loads(content)
+        return binary
 
     #
     # getUsersByOrgPaged
@@ -1369,7 +1669,7 @@ class c42Lib(object):
 
         logging.debug(r.text)
 
-        content = r.content
+        content = r.content.decode("UTF-8")
         binary = json.loads(content)
         logging.debug(binary)
 
@@ -1400,36 +1700,6 @@ class c42Lib(object):
 
         server = binary['data']
         return server
-
-
-
-    #
-    # getServersByDesitnationId(destinationId):
-    # returns server information based on destinationId
-    # params:
-    # destinationId: id of destination
-    #
-
-    @staticmethod
-    def getServersByDestinationId(destinationId):
-        logging.info("getServersByDestinationId-params:destinationId[" + str(destinationId) + "]")
-
-        params = {}
-        params['destinationId'] = str(destinationId)
-
-        payload = {}
-
-        r = c42Lib.executeRequest("get", c42Lib.cp_api_server, params, payload)
-
-        logging.debug(r.text)
-
-        content = r.content
-        binary = json.loads(content)
-        logging.debug(binary)
-
-        servers = binary['data']['servers']
-        return servers
-
 
     # getStorePoitnByStorePointId(storePointId):
     # returns store point information based on the storePointId

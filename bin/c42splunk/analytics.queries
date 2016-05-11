@@ -1,0 +1,30 @@
+#name_to_query
+`audit_searchlocal`
+| where match(savedsearch_name, "^search\d*$")
+    AND match(search, "index=\"?code42\"?")
+| dedup savedsearch_name
+| table savedsearch_name search
+
+#query_run_time
+index=_audit action=search info=completed
+| where match(search_id, "code42")
+    AND match(savedsearch_name, "^search\d*$")
+| stats avg(total_run_time) AS avg_run_time by savedsearch_name event_count
+| table savedsearch_name avg_run_time event_count
+
+#view_usage
+index=_internal source=*access.log */app/*
+| rex "\/app\/(?<AppName>\w+)\/(?<ViewName>\w+)\""
+| search AppName=code42 AND ViewName=*
+| stats count as usage_count by ViewName
+
+#custom_searches
+index=_audit search=* action=search
+| where match(search, "index=\"?code42\"?")
+    AND NOT match(savedsearch_name, "^search\d*$")
+| dedup search
+| table savedsearch_name search
+
+#index_size
+| eventcount summarize=false index=code42 report_size=true
+| eval MB = size_bytes / 1024 / 1024

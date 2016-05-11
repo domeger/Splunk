@@ -1,0 +1,64 @@
+{
+  "test_calculate_delta_event_structure": {
+    "data": [
+      {
+        "creatorGuid": "0",
+        "userUid": null,
+        "versionTimestamp": "2015-08-14T13:22:10.750-05:00",
+        "sourceLastModified": 1439575819000,
+        "timestamp": 1439576530750,
+        "fileId": "885bf69dc0168f3624435346d7bf4836",
+        "sourceLastModifiedTime": "2015-08-14T13:10:19.000-05:00",
+        "path": "{{RANDOM}}",
+        "fhPosition": 0,
+        "sourceLength": 0,
+        "planUid": "",
+        "sourceChecksum": "6666cd76f96956469e7be39d750cc7d9",
+        "fileType": 1,
+        "parentFileId": "00000000000000000000000000000000",
+        "pathLength": 16,
+        "fhLen": 88
+      }
+    ]
+  },
+  "test_calculate_delta_filtering": {
+    "data": [
+      {
+        "creatorGuid": "0",
+        "userUid": null,
+        "versionTimestamp": "2015-08-14T13:22:10.750-05:00",
+        "sourceLastModified": 1439575819000,
+        "timestamp": 1439576530750,
+        "fileId": "885bf69dc0168f3624435346d7bf4836",
+        "sourceLastModifiedTime": "2015-08-14T13:10:19.000-05:00",
+        "path": "/",
+        "fhPosition": 0,
+        "sourceLength": 0,
+        "planUid": "",
+        "sourceChecksum": "6666cd76f96956469e7be39d750cc7d9",
+        "fileType": 1,
+        "parentFileId": "00000000000000000000000000000000",
+        "pathLength": 16,
+        "fhLen": 88
+      },
+      {
+        "creatorGuid": "0",
+        "userUid": null,
+        "versionTimestamp": "2015-08-21T03:00:31.130-05:00",
+        "sourceLastModified": 1440138183000,
+        "timestamp": 1440144031130,
+        "fileId": "09d716b711c230c099a7ec2dcd5bbea5",
+        "sourceLastModifiedTime": "2015-08-21T01:23:03.000-05:00",
+        "path": "/Library/Code42/.processedevents/2015/08/21/20150821_141335000-RESTORE_JOB.c42event",
+        "fhPosition": 15190,
+        "sourceLength": 484,
+        "planUid": "",
+        "sourceChecksum": "075657f9cdc623b350f7a4b349d306a6",
+        "fileType": 0,
+        "parentFileId": "ea638728a9ae0a079d5239bd1b1e665f",
+        "pathLength": 96,
+        "fhLen": 111
+      }
+    ]
+  }
+}

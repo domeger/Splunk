@@ -18,40 +18,26 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from _base import SplunkScript
+"""
+This module is meant to provide scripts and utilities for writing scripts that
+hit Code42 installations.
+"""
 
-import json
-import os
 import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-class UserWrapper(SplunkScript):
-    def main(self):
-        #########################################################
-        ## RUN THE USERS EXPORTER & REFORMAT EVENTS FOR SPLUNK ##
-        #########################################################
+# pylint: disable=relative-import
+from backup_metadata_delta import calculate_delta
+from computers import fetch_computers
+from query import organization, devices
+from security_event_restore import fetch_detection_events, create_filter_by_utc_datetime, create_filter_by_cursor
+from storage_server import storage_servers
+from users import fetch_users
 
-        # Set up variables
-        pyScript = os.path.join(self.appHome, 'utils', 'users.py')
-        eventsDir = os.path.join(self.appHome, 'events')
-        tmpEventFile = os.path.join(eventsDir, 'users.txt')
+from common.logging_config import set_log_file, set_log_level, get_logger
+from common import resources
+from common.script_output import write_csv, write_header_from_keyset, write_json, write_json_splunk
+from common.server import Server
 
-        if not os.path.exists(eventsDir):
-            os.makedirs(eventsDir)
-
-        args = [ pyScript,
-                 tmpEventFile
-        ];
-        self.python(args)
-
-        with open(tmpEventFile, 'r') as data_file:
-            # first line of file is '['
-            data_file.readline()
-            for line in data_file:
-                if line.strip() not in [',',']']:
-                    sys.stdout.write(json.dumps(json.loads(line)) + "\n")
-
-        os.remove(tmpEventFile)
-
-
-script = UserWrapper()
-script.run()
+from requests.exceptions import ConnectionError, HTTPError

@@ -1,6 +1,10 @@
 <nav search_view="search" color="#FE5000">
     <view name="search" />
     <collection label="Dashboards">
-        <view name="crashplan" default="true" />
+        <view name="security" default="true" />
+        <view name="removablemedia" />
+        <view name="cloudservice" />
+        <view name="restore" />
+	<view name="crashplan" />
     </collection>
 </nav>

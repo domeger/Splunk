@@ -18,29 +18,40 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-"""Code42 Django web app controllers and templates."""
+"""
+This is just a list of API resource constants. If you add some, keep it in
+alphabetical order.
+"""
 
-import sys
-import os
-
-SPLUNK_HOME = os.environ.get('SPLUNK_HOME')
-APP_HOME = os.path.join(SPLUNK_HOME, 'etc', 'apps', 'code42')
-WHEEL_DIR = os.path.join(APP_HOME, 'utils', 'wheels')
-
-sys.path.insert(0, os.path.join(APP_HOME, 'bin'))
-sys.path.insert(0, os.path.join(APP_HOME, 'utils'))
-
-def add_wheel(wheel_name):
-    """
-    Adds a wheel to the python path
-    """
-    sys.path.insert(0, os.path.join(WHEEL_DIR, wheel_name))
-
-WHEELS = [
-    'six-1.9.0-py2.py3-none-any.whl',
-    'python_dateutil-2.4.2-py2.py3-none-any.whl',
-    'requests-2.7.0-py2.py3-none-any.whl',
-]
-
-# pylint: disable=bad-builtin
-map(add_wheel, WHEELS)
+ARCHIVE = "Archive"
+ARCHIVE_METADATA = "ArchiveMetadata"
+AUTH_TOKEN = "AuthToken"
+CLI = "cli"
+COMPUTER = "Computer"
+COMPUTER_BLOCK = "ComputerBlock"
+COMPUTER_DEACTIVATION = "ComputerDeactivation"
+DATA_KEY_TOKEN = "DataKeyToken"
+DESTINATION = "Destination"
+DEVICE_UPGRADE = "DeviceUpgrade"
+FILE_CONTENT = "FileContent"
+FILE_METADATA = "FileMetadata"
+LOGIN_TOKEN = "LoginToken"
+NETWORK_TEST = "NetworkTest"
+ORG = "Org"
+PING = "Ping"
+PLAN = "Plan"
+PUSH_RESTORE_JOB = "PushRestoreJob"
+RESTORE_RECORD = "RestoreRecord"
+SECURITY_DETECTION_EVENTS = "SecurityDetectionEvents"
+SERVER = "Server"
+STORAGE = "Storage"
+STORAGE_AUTH_TOKEN = "StorageAuthToken"
+STORE_POINT = "StorePoint"
+USER = "User"
+USER_DEACTIVATION = "UserDeactivation"
+USER_MOVE_PROCESS = "UserMoveProcess"
+USER_ROLE = "UserRole"
+WEB_RESTORE_JOB = "WebRestoreJob"
+WEB_RESTORE_JOB_RESULT = "WebRestoreJobResult"
+WEB_RESTORE_SEARCH = "WebRestoreSearch"
+WEB_RESTORE_SESSION = "WebRestoreSession"

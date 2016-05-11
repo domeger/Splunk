@@ -10,32 +10,6 @@ App for Splunk setup process. Splunk guides you through the setup process, but
 you may also read the Code42 App for Splunk installation article at the
 [Code42 Support site][support].
 
-### Install Prerequisites
-
-The Python scripts embedded in this app have several dependencies that need to
-be installed for the app to import events successfully.
-
-1. Check your Splunk server's system Python path.
-    - For stability, you should ensure that `python3` is installed on your
-    system&mdash;this will be used automatically by the Code42 app for Splunk.
-    The embedded Python included with Splunk does not support all the
-    requirements of this app.
-    - We search for `python3` in your `$PATH` variable, followed by several
-    common locations to find the full path to Python 3 (including Windows
-    Python). If you have a non-standard installation (such as `python3.4` or
-    `python-3`), you can create a new file at `./local/python.path` with the
-    correct path. You can run the following command to write a path file.
-        - `which python3.4 > /path/to/splunk/etc/apps/code42/local/python.path`
-1. Install Python dependencies using [pip][pip] (see below).
-
-```
-$ sudo python3 -m pip install requests
-$ sudo python3 -m pip install python-dateutil
-```
-
-These dependencies are required regardless of your Python version. You can opt
-to install them using `easy_install`.
-
 ### Install App
 
 #### Install via Splunk Package

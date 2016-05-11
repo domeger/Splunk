@@ -18,29 +18,40 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-"""Code42 Django web app controllers and templates."""
+"""
+A wrapper script around c42api.computers that prints out backup usage data
+to stdout. This is intended to be called by Splunk.
+"""
 
+# pylint: disable=relative-import, import-error
+import datetime
 import sys
-import os
 
-SPLUNK_HOME = os.environ.get('SPLUNK_HOME')
-APP_HOME = os.path.join(SPLUNK_HOME, 'etc', 'apps', 'code42')
-WHEEL_DIR = os.path.join(APP_HOME, 'utils', 'wheels')
+from common import splunk_common as common
+import c42api
 
-sys.path.insert(0, os.path.join(APP_HOME, 'bin'))
-sys.path.insert(0, os.path.join(APP_HOME, 'utils'))
 
-def add_wheel(wheel_name):
+def _run():
     """
-    Adds a wheel to the python path
+    The script's body. Prints out backup usage data to stdout, which will be
+    captured by Splunk.
     """
-    sys.path.insert(0, os.path.join(WHEEL_DIR, wheel_name))
+    server, _ = common.setup()
+    params = {'active': 'true',
+              'incBackupUsage': True,
+              'incHistory': True}
+    results = c42api.fetch_computers(server, params, insert_schema_version=True)
+    timestamp = datetime.datetime.now().isoformat()
+    for result in results:
+        guid = result['guid']
+        schema_version = result['schema_version']
+        backup_usage_array = result['backupUsage']
+        for backup_usage in backup_usage_array:
+            backup_usage['guid'] = guid
+            backup_usage['timestamp'] = timestamp
+            backup_usage['schema_version'] = schema_version
+        c42api.write_json_splunk(sys.stdout, backup_usage_array)
 
-WHEELS = [
-    'six-1.9.0-py2.py3-none-any.whl',
-    'python_dateutil-2.4.2-py2.py3-none-any.whl',
-    'requests-2.7.0-py2.py3-none-any.whl',
-]
 
-# pylint: disable=bad-builtin
-map(add_wheel, WHEELS)
+if __name__ == '__main__':
+    _run()

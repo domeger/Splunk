@@ -18,29 +18,43 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-"""Code42 Django web app controllers and templates."""
+"""
+A wrapper script the users module in c42api that prints out data to Splunk
+lookup tables. This is intended to be called by Splunk.
+"""
 
-import sys
+# pylint: disable=relative-import, import-error
 import os
 
-SPLUNK_HOME = os.environ.get('SPLUNK_HOME')
-APP_HOME = os.path.join(SPLUNK_HOME, 'etc', 'apps', 'code42')
-WHEEL_DIR = os.path.join(APP_HOME, 'utils', 'wheels')
+from common import splunk_common as common
+import c42api
+from splunk_utils import splunk_lookup_table
 
-sys.path.insert(0, os.path.join(APP_HOME, 'bin'))
-sys.path.insert(0, os.path.join(APP_HOME, 'utils'))
+TIME_KEY = 'modificationDate'
+USER_KEYS_TO_IGNORE = ['modificationDate']
+USER_UID_KEY = 'userUid'
 
-def add_wheel(wheel_name):
+
+def _run():
     """
-    Adds a wheel to the python path
+    The script's body. Creates/Updates Splunk user lookup table.
     """
-    sys.path.insert(0, os.path.join(WHEEL_DIR, wheel_name))
+    app_home = common.app_home()
 
-WHEELS = [
-    'six-1.9.0-py2.py3-none-any.whl',
-    'python_dateutil-2.4.2-py2.py3-none-any.whl',
-    'requests-2.7.0-py2.py3-none-any.whl',
-]
+    lookups_dir = os.path.join(app_home, "lookups")
+    old_user_lookup_table = os.path.join(lookups_dir, "user_lookup.csv")
+    tmp_user_lookup_table = os.path.join(lookups_dir, "user_lookup_tmp.csv")
 
-# pylint: disable=bad-builtin
-map(add_wheel, WHEELS)
+    if not os.path.exists(lookups_dir):
+        os.makedirs(lookups_dir)
+
+    server, _ = common.setup()
+
+    # write user lookup table
+    user_results = c42api.fetch_users(server)
+    splunk_lookup_table.write_lookup_table(old_user_lookup_table, tmp_user_lookup_table, user_results,
+                                           USER_UID_KEY, USER_KEYS_TO_IGNORE, TIME_KEY)
+
+
+if __name__ == '__main__':
+    _run()

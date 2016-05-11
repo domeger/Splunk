@@ -18,29 +18,39 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-"""Code42 Django web app controllers and templates."""
+"""
+A file for a class that holds common state for a splunk script.
+"""
 
-import sys
 import os
 
-SPLUNK_HOME = os.environ.get('SPLUNK_HOME')
-APP_HOME = os.path.join(SPLUNK_HOME, 'etc', 'apps', 'code42')
-WHEEL_DIR = os.path.join(APP_HOME, 'utils', 'wheels')
 
-sys.path.insert(0, os.path.join(APP_HOME, 'bin'))
-sys.path.insert(0, os.path.join(APP_HOME, 'utils'))
-
-def add_wheel(wheel_name):
+class SplunkConfigurator(object):
     """
-    Adds a wheel to the python path
+    A class that holds common state for a splunk script. Specifically, it
+    stores the session key and provides access to the splunk home location.
     """
-    sys.path.insert(0, os.path.join(WHEEL_DIR, wheel_name))
+    def __init__(self):
+        """Initializes instance variables for properties"""
+        self._session_key = None
+        self._splunk_home = None
+        self._is_initialized = False
 
-WHEELS = [
-    'six-1.9.0-py2.py3-none-any.whl',
-    'python_dateutil-2.4.2-py2.py3-none-any.whl',
-    'requests-2.7.0-py2.py3-none-any.whl',
-]
+    def initialize(self, session_key):
+        """Sets the session key instance variable, but only once"""
+        if self._is_initialized:
+            return
+        self._session_key = session_key
+        self._is_initialized = True
 
-# pylint: disable=bad-builtin
-map(add_wheel, WHEELS)
+    @property
+    def session_key(self):
+        """The getter for the immutable session_key"""
+        return self._session_key
+
+    @property
+    def splunk_home(self):
+        """The getter for the lazily instantiated splunk_home"""
+        if not self._splunk_home:
+            self._splunk_home = os.environ.get('SPLUNK_HOME')
+        return self._splunk_home
