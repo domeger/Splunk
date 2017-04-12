@@ -1,5 +1,8 @@
 # Code42 App for Splunk
 
+### Disclaimer
+This repo is pushed to the public [Code42 Github repo](https://github.com/code42/Splunk)
+
 The Code42 App for Splunk connects to a Code42 server for importing and syncing
 event data between Code42 and Splunk.
 

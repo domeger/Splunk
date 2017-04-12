@@ -35,6 +35,7 @@ from c42api.common import logging_config
 
 LOG = logging_config.get_logger(__name__)
 
+
 def _fetch_storage_destinations(authority, plan_uid):
     """
     Fetches all storage destinations for a plan uid from the authority.
@@ -45,6 +46,7 @@ def _fetch_storage_destinations(authority, plan_uid):
     :return:          A list of dictionaries that represent destinations
     """
     response = authority.json_from_response(authority.get([resources.STORAGE, plan_uid]))
+    LOG.info("storage resource request to authority = %s. response = %s", str(authority), str(response))
     try:
         return response['data']
     except KeyError:
@@ -143,11 +145,11 @@ def _fetch_storage_servers(authority, plan_uid):
     storage_destinations = _fetch_storage_destinations(authority, plan_uid)
     if not storage_destinations:
         yield None
-    LOG.debug("Plan {0} has {1} storage destinations".format(plan_uid, len(storage_destinations)))
+    LOG.info("Plan {0} has {1} storage destinations".format(plan_uid, len(storage_destinations)))
     for guid_key, storage_dict in storage_destinations.items():
         result = _server_object_for_destination(authority, plan_uid, guid_key, storage_dict)
         if result:
-            LOG.debug("Found possible storage location for plan {0} at {1}".format(result, plan_uid))
+            LOG.info("Found possible storage location for plan {0} at {1}".format(plan_uid, result))
             yield result
 
 
@@ -161,6 +163,7 @@ def _server_object_for_destination(authority, plan_uid, destination_guid, storag
     :param storage_dict:     A dictionary representing the storage server
     :return:                 An auth'd server object that is online
     """
+
     def url_and_storage_login_token():
         """
         Fetches a login token from the authority for a storage server
@@ -189,23 +192,24 @@ def _server_object_for_destination(authority, plan_uid, destination_guid, storag
             result_server = Server(url.hostname, url.port, protocol=url.scheme,
                                    verify_ssl=authority.verify_ssl)
             auth_token = _request_auth_token(result_server, login_token)
-        except requests.HTTPError:
-            LOG.debug("Failed to auth with location")
+        except requests.RequestException as e:
+            LOG.debug("Failed to auth with location. %e", str(e))
             return None
 
         result_server.authorization = auth_token
         return result_server
 
-    LOG.debug("Attempting to auth with storage location (destination_guid:{0}, url:{1})".format(destination_guid, storage_dict['url']))
+    LOG.debug("Attempting to auth with storage location (destination_guid:{0}, url:{1})".format(destination_guid,
+                                                                                                storage_dict['url']))
 
     node_url = storage_dict['url']
     try:
         # network test resource only wants hostname, no scheme or port
-        LOG.debug("Determining reachability for server {0}".format(node_url))
+        LOG.info("Determining readability for server %s, planUid = %s", str(node_url), str(plan_uid))
         _network_ping(node_url, verify=authority.verify_ssl)
-    except requests.HTTPError:
+    except requests.RequestException as e:
         # The server ping was not successful
-        LOG.debug("Network ping determined location unreachable")
+        LOG.info("Network ping determined location unreachable, %s", str(e))
         return None
 
     destinations_by_guid = _grouped_dict_by_key(_fetch_all_destinations(authority), 'guid')
@@ -273,6 +277,7 @@ def storage_servers(authority, plan_uids=None, device_guid=None):
     :param device_guid: The optional device guid
     :return:            A generator of destinations that are all online
     """
+
     def fetch_plan_uids():
         """
         Fetches plan uids for the device guid, or just the ones passed in.

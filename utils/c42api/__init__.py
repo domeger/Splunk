@@ -31,7 +31,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from backup_metadata_delta import calculate_delta
 from computers import fetch_computers
 from query import organization, devices
-from security_event_restore import fetch_detection_events, create_filter_by_utc_datetime, create_filter_by_cursor
+from security_event_restore import fetch_detection_events, create_filter_by_utc_datetime, create_filter_by_cursor, create_filter_by_iso_minTs_and_now
 from storage_server import storage_servers
 from users import fetch_users
 
@@ -40,4 +40,4 @@ from common import resources
 from common.script_output import write_csv, write_header_from_keyset, write_json, write_json_splunk
 from common.server import Server
 
-from requests.exceptions import ConnectionError, HTTPError
+from requests.exceptions import ConnectionError, HTTPError, RequestException

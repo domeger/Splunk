@@ -26,7 +26,9 @@ A collection of functions related to script output.
 import json
 
 from c42csv import c42_csv as csv
+from c42api.common import logging_config
 
+LOG = logging_config.get_logger(__name__)
 
 def write_csv(out, json_list, header=False, shallow=False, keyset=None):
     """
